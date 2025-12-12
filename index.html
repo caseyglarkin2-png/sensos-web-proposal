@@ -231,6 +231,61 @@
           }
         }
 
+        // --- NOTIFICATIONS (Webhook-based) ---
+        function getNotifyUrl() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const fromUrl = urlParams.get('notify');
+          if (fromUrl) {
+            localStorage.setItem('notify_url', fromUrl);
+            // Clean URL of the notify param
+            urlParams.delete('notify');
+            const newSearch = urlParams.toString();
+            const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+            window.history.replaceState({}, document.title, newUrl);
+          }
+          return localStorage.getItem('notify_url');
+        }
+
+        async function notifyEvent(eventName, payload = {}) {
+          try {
+            const url = getNotifyUrl();
+            if (!url) {
+              // Fallback: open a mailto draft (no setup, no cost)
+              const subject = encodeURIComponent(`[Sensos] ${eventName}`);
+              const body = encodeURIComponent(JSON.stringify({
+                event: eventName,
+                at: new Date().toISOString(),
+                href: window.location.href,
+                userAgent: navigator.userAgent,
+                referrer: document.referrer,
+                ...payload,
+              }, null, 2));
+              // Use a short debounce to avoid multiple prompts
+              if (!window.__mailtoDebounce) {
+                window.__mailtoDebounce = setTimeout(() => { window.__mailtoDebounce = null; }, 2000);
+                window.location.href = `mailto:caseyglarkin2@gmail.com?subject=${subject}&body=${body}`;
+              }
+              return;
+            }
+            const body = {
+              event: eventName,
+              at: new Date().toISOString(),
+              href: window.location.href,
+              userAgent: navigator.userAgent,
+              referrer: document.referrer,
+              ...payload,
+            };
+            await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+              keepalive: true,
+            });
+          } catch (e) {
+            console.warn('notifyEvent failed', e);
+          }
+        }
+
 
         const styles = `
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
@@ -380,6 +435,9 @@
                 <div className="flex flex-col md:flex-row gap-4">
                   <a href="#proposal" className="group bg-neon text-black px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-white transition-colors">
                     <Terminal size={20} /> Initialize Protocol
+                  </a>
+                  <a href="#sign" onClick={() => notifyEvent('cta_review_sign_click')} className="group border border-neon text-neon px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-neon hover:text-black transition-colors">
+                    <ShieldAlert size={20} /> Review & Sign
                   </a>
                   <div className="border border-gray-700 px-8 py-4 flex items-center gap-4 bg-black/50 backdrop-blur-sm">
                     <div className="text-right">
@@ -876,8 +934,147 @@
                     </tbody>
                   </table>
                 </div>
+
+                {/* Digital Signature Option */}
+                <div id="sign" className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="bg-black border border-gray-800 p-8 rounded-xl">
+                    <h3 className="text-2xl font-bold mb-2">Authorize The Proposal</h3>
+                    <p className="text-gray-400 text-sm mb-6">Optionally add a digital signature to acknowledge receipt or intent. Your signature is stored locally until you export it.</p>
+                    <SignaturePad />
+                  </div>
+                  <div className="bg-gray-900 border border-gray-800 p-8 rounded-xl">
+                    <h4 className="text-neon mono text-xs mb-2">Notes</h4>
+                    <ul className="text-sm text-gray-400 space-y-2">
+                      <li>Signature is captured as a PNG image (base64).</li>
+                      <li>No backend is connected. Use Export to download.</li>
+                      <li>Works with mouse and touch. Clear to reset.</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </section>
+          );
+        };
+
+        // Digital Signature Pad Component
+        const SignaturePad = () => {
+          const canvasRef = useRef(null);
+          const previewRef = useRef(null);
+          const [enabled, setEnabled] = useState(true);
+          const [hasInk, setHasInk] = useState(false);
+          const [dataUrl, setDataUrl] = useState("");
+          const [drawing, setDrawing] = useState(false);
+          const lastRef = useRef({ x: 0, y: 0 });
+
+          useEffect(() => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+
+            const getPos = (evt) => {
+              const rect = canvas.getBoundingClientRect();
+              const clientX = evt.clientX ?? (evt.touches && evt.touches[0].clientX);
+              const clientY = evt.clientY ?? (evt.touches && evt.touches[0].clientY);
+              return { x: clientX - rect.left, y: clientY - rect.top };
+            };
+
+            const start = (evt) => { evt.preventDefault(); setDrawing(true); lastRef.current = getPos(evt); };
+            const move = (evt) => {
+              if (!drawing) return; evt.preventDefault();
+              const p = getPos(evt);
+              ctx.beginPath(); ctx.moveTo(lastRef.current.x, lastRef.current.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+              lastRef.current = p; setHasInk(true);
+            };
+            const end = (evt) => { if (!drawing) return; evt.preventDefault(); setDrawing(false); };
+
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', end);
+            canvas.addEventListener('touchstart', start, { passive: false });
+            canvas.addEventListener('touchmove', move, { passive: false });
+            window.addEventListener('touchend', end, { passive: false });
+
+            const cleanup = () => {
+              canvas.removeEventListener('mousedown', start);
+              canvas.removeEventListener('mousemove', move);
+              window.removeEventListener('mouseup', end);
+              canvas.removeEventListener('touchstart', start, { passive: false });
+              canvas.removeEventListener('touchmove', move, { passive: false });
+              window.removeEventListener('touchend', end, { passive: false });
+            };
+            return cleanup;
+          }, [drawing]);
+
+          useEffect(() => {
+            // responsive CSS sizing while keeping internal resolution
+            const canvas = canvasRef.current;
+            const section = canvas?.parentElement;
+            const resize = () => {
+              if (!canvas || !section) return;
+              const baseW = 640, baseH = 240;
+              const maxW = Math.min(baseW, section.clientWidth - 4);
+              const scale = maxW / baseW;
+              canvas.style.width = `${maxW}px`;
+              canvas.style.height = `${baseH * scale}px`;
+            };
+            window.addEventListener('resize', resize);
+            resize();
+            return () => window.removeEventListener('resize', resize);
+          }, []);
+
+          const clear = () => {
+            const canvas = canvasRef.current; if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            setHasInk(false); setDataUrl("");
+            if (previewRef.current) previewRef.current.src = "";
+          };
+
+          const save = () => {
+            const canvas = canvasRef.current; if (!canvas) return;
+            if (!hasInk) { alert('Please add a signature before saving.'); return; }
+            const url = canvas.toDataURL('image/png');
+            setDataUrl(url);
+            if (previewRef.current) previewRef.current.src = url;
+            notifyEvent('signature_saved', { bytes: url.length });
+          };
+
+          const exportPng = () => {
+            if (!dataUrl) return;
+            const a = document.createElement('a');
+            a.href = dataUrl; a.download = 'signature.png';
+            a.click();
+            notifyEvent('signature_downloaded');
+          };
+
+          return (
+            <div>
+              <label className="flex items-center gap-2 mb-4 cursor-pointer">
+                <input type="checkbox" checked={enabled} onChange={() => { setEnabled(v => !v); if (enabled) clear(); }} />
+                <span className="mono text-xs text-gray-400">Add Digital Signature</span>
+              </label>
+              {!enabled ? (
+                <div className="text-gray-600 text-sm">Toggle to enable signature pad.</div>
+              ) : (
+                <div>
+                  <canvas ref={canvasRef} width={640} height={240} className="w-full bg-gray-950 border border-gray-800 rounded-lg" aria-label="Signature pad"></canvas>
+                  <div className="flex gap-3 mt-3">
+                    <button onClick={clear} className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700">Clear</button>
+                    <button onClick={save} className="px-4 py-2 bg-neon text-black font-bold rounded hover:bg-white">Save Signature</button>
+                    <button onClick={exportPng} disabled={!dataUrl} className="px-4 py-2 bg-gray-900 text-white border border-gray-700 rounded disabled:opacity-50">Download Signature</button>
+                  </div>
+                  <div className="mt-4">
+                    <div className="mono text-xs text-gray-500 mb-2">Saved signature preview:</div>
+                    <img ref={previewRef} alt="Saved signature preview" className="max-w-full h-auto border border-gray-800 rounded" />
+                  </div>
+                  <input type="hidden" name="signatureData" value={dataUrl} />
+                </div>
+              )}
+            </div>
           );
         };
 
@@ -936,6 +1133,20 @@
 
         // Main App Component
         function App() {
+          // Notify when signature section enters viewport
+          useEffect(() => {
+            const el = document.getElementById('sign');
+            if (!el) return;
+            const obs = new IntersectionObserver((entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  notifyEvent('view_signature_section');
+                }
+              });
+            }, { threshold: 0.5 });
+            obs.observe(el);
+            return () => obs.disconnect();
+          }, []);
           return (
             <div className="bg-black text-white min-h-screen">
               <style>{styles}</style>
@@ -946,9 +1157,27 @@
               <Strategy />
               <ManifestPlan />
               <Pricing />
+              <FixedCTA />
             </div>
           );
         }
+
+        // Fixed bottom CTA
+        const FixedCTA = () => {
+          const handleClick = () => {
+            notifyEvent('cta_fixed_review_sign_click');
+            const el = document.getElementById('sign');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          };
+          return (
+            <div className="fixed bottom-0 left-0 right-0 z-40">
+              <div className="mx-4 mb-4 bg-black/70 backdrop-blur-sm border border-neon px-4 py-3 flex items-center justify-between">
+                <span className="mono text-xs text-neon">Ready to Review & Sign?</span>
+                <button onClick={handleClick} className="px-4 py-2 bg-neon text-black font-bold rounded hover:bg-white">Review & Sign</button>
+              </div>
+            </div>
+          );
+        };
 
         try {
             const root = ReactDOM.createRoot(document.getElementById('root'));
