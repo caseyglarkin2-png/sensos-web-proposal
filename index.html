@@ -8,16 +8,35 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Lucide React UMD -->
+    <!-- Load Lucide (Vanilla) and Lucide React -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
 </head>
 <body>
     <div id="root"></div>
+    <div id="debug-error" style="color: red; padding: 20px; display: none;"></div>
+
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            const debugDiv = document.getElementById('debug-error');
+            debugDiv.style.display = 'block';
+            debugDiv.innerHTML += `Error: ${message} at ${source}:${lineno}<br>`;
+        };
+    </script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
-        // Access Lucide icons from the global object
-        const { Terminal, Cpu, ShieldAlert, Zap, Globe, DollarSign, Crosshair, Users, MapPin, Server, Activity, ArrowRight, Brain, Radio, Mic, Volume2, Share2, Download, Image: ImageIcon, Sparkles, Loader } = lucideReact;
+        
+        // Attempt to get Lucide icons from global variables
+        // lucide-react UMD usually exposes 'lucide' or 'lucideReact'
+        const LucideIcons = window.lucideReact || window.lucide || {};
+        const { Terminal, Cpu, ShieldAlert, Zap, Globe, DollarSign, Crosshair, Users, MapPin, Server, Activity, ArrowRight, Brain, Radio, Mic, Volume2, Share2, Download, Image: ImageIcon, Sparkles, Loader } = LucideIcons;
+
+        if (!Terminal) {
+            console.error("Lucide icons not loaded correctly. Globals available:", { lucide: window.lucide, lucideReact: window.lucideReact });
+            document.getElementById('debug-error').style.display = 'block';
+            document.getElementById('debug-error').innerHTML += "CRITICAL: Lucide Icons failed to load.<br>";
+        }
 
         // --- GEMINI API HELPERS ---
         
