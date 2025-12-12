@@ -246,9 +246,10 @@
           return localStorage.getItem('notify_url');
         }
 
-        async function notifyEvent(eventName, payload = {}) {
+        async function notifyEvent(eventName, payload = {}, options = {}) {
           try {
             const url = getNotifyUrl();
+            const interactive = !!options.interactive;
             if (!url) {
               // Fallback: open a mailto draft (no setup, no cost)
               const subject = encodeURIComponent(`[Sensos] ${eventName}`);
@@ -261,7 +262,7 @@
                 ...payload,
               }, null, 2));
               // Use a short debounce to avoid multiple prompts
-              if (!window.__mailtoDebounce) {
+              if (interactive && !window.__mailtoDebounce) {
                 window.__mailtoDebounce = setTimeout(() => { window.__mailtoDebounce = null; }, 2000);
                 window.location.href = `mailto:caseyglarkin2@gmail.com?subject=${subject}&body=${body}`;
               }
@@ -436,7 +437,7 @@
                   <a href="#proposal" className="group bg-neon text-black px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-white transition-colors">
                     <Terminal size={20} /> Initialize Protocol
                   </a>
-                  <a href="#sign" onClick={(e) => { e.preventDefault(); notifyEvent('cta_review_sign_click'); window.dispatchEvent(new CustomEvent('open-review-sign-portal')); }} className="group border border-neon text-neon px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-neon hover:text-black transition-colors">
+                  <a href="#sign" onClick={(e) => { e.preventDefault(); notifyEvent('cta_review_sign_click', {}, { interactive: true }); window.dispatchEvent(new CustomEvent('open-review-sign-portal')); }} className="group border border-neon text-neon px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-neon hover:text-black transition-colors">
                     <ShieldAlert size={20} /> Review & Sign
                   </a>
                   <div className="border border-gray-700 px-8 py-4 flex items-center gap-4 bg-black/50 backdrop-blur-sm">
@@ -1183,10 +1184,33 @@
               <ManifestPlan />
               <Pricing />
               <FixedCTA />
+              <ToastHost />
               <ReviewSignPortal />
             </div>
           );
         }
+
+        // Simple toast host
+        const ToastHost = () => {
+          const [msg, setMsg] = useState("");
+          useEffect(() => {
+            const handler = (e) => {
+              setMsg(e.detail?.message || "");
+              clearTimeout(window.__toastTimer);
+              window.__toastTimer = setTimeout(() => setMsg(""), 2500);
+            };
+            window.addEventListener('toast', handler);
+            return () => window.removeEventListener('toast', handler);
+          }, []);
+          if (!msg) return null;
+          return (
+            <div className="fixed bottom-6 right-6 z-[200]">
+              <div className="px-4 py-2 bg-black/80 text-white border border-neon shadow-[0_0_20px_rgba(0,255,194,0.2)] rounded mono text-xs">
+                {msg}
+              </div>
+            </div>
+          );
+        };
 
         // Review & Sign Portal (modal)
         const ReviewSignPortal = () => {
@@ -1259,8 +1283,35 @@
             if (!name || !email || !agree) { alert('Please complete Name, Email, and accept the agreement.'); return; }
             if (!hasInk) { alert('Please add your signature.'); return; }
             const dataUrl = canvasRef.current.toDataURL('image/png');
-            await notifyEvent('sow_signed', { name, title, email, company, signatureBytes: dataUrl.length, docId, docUrl });
-            alert('Thank you. Your acknowledgment has been recorded.');
+            await notifyEvent('sow_signed', { name, title, email, company, signatureBytes: dataUrl.length, docId, docUrl }, { interactive: true });
+            // Success toast
+            window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Signed & sent. Check your email for confirmation.' } }));
+            // Generate simple PDF with jsPDF
+            try {
+              const { jsPDF } = window.jspdf || {};
+              if (jsPDF) {
+                const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(14);
+                doc.text('Sensos — Statement of Work Acknowledgment', 40, 50);
+                doc.setFontSize(11);
+                doc.text(`Name: ${name}`, 40, 80);
+                doc.text(`Title: ${title || '-'}`, 40, 100);
+                doc.text(`Email: ${email}`, 40, 120);
+                doc.text(`Company: ${company || '-'}`, 40, 140);
+                doc.text(`Date: ${new Date().toLocaleString()}`, 40, 160);
+                doc.text(`SOW: ${docUrl}`, 40, 180, { maxWidth: 515 });
+                // Signature image
+                const imgProps = { x: 40, y: 220, w: 300, h: 100 };
+                doc.text('Signature:', 40, 210);
+                doc.addImage(dataUrl, 'PNG', imgProps.x, imgProps.y, imgProps.w, imgProps.h);
+                doc.save('signed-agreement.pdf');
+              } else {
+                console.warn('jsPDF not available');
+              }
+            } catch (e) {
+              console.warn('PDF generation failed', e);
+            }
             setOpen(false);
           };
 
@@ -1276,8 +1327,11 @@
                       <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white text-xs">Close</button>
                     </div>
                   </div>
-                  <div className="h-[60vh] lg:h-[70vh] bg-black border border-gray-800">
-                    <iframe title="SOW" src={docUrl} className="w-full h-full"/>
+                  <div className="h-[60vh] lg:h-[70vh] relative bg-black border border-neon shadow-[0_0_30px_rgba(0,255,194,0.15)] overflow-hidden">
+                    <div className="absolute inset-0 pointer-events-none opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+                    <iframe title="SOW" src={docUrl} className="w-full h-full grayscale-[20%] contrast-125"/>
+                    <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/80 to-transparent"></div>
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent"></div>
                   </div>
                 </div>
                 <div className="lg:col-span-4 p-4">
