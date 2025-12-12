@@ -6,10 +6,7 @@
     <title>Sensos Web Proposal v2</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Lucide (Vanilla) and Lucide React -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js" crossorigin></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
@@ -30,6 +27,11 @@
     </script>
 
     <script type="text/babel">
+        // --- SAFETY CHECK ---
+        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+            throw new Error("React or ReactDOM failed to load. Please check your internet connection or CDN status.");
+        }
+
         const { useState, useEffect, useRef } = React;
         
         // --- INLINE ICONS (No External Dependencies) ---
@@ -948,8 +950,14 @@
           );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        try {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+        } catch (error) {
+            console.error("Render Error:", error);
+            document.getElementById('debug-error').style.display = 'block';
+            document.getElementById('debug-error').innerHTML += `<strong>Render Error:</strong> ${error.message}<br>`;
+        }
     </script>
 </body>
 </html>
