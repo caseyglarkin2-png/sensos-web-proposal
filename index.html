@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div id="root" class="bg-black min-h-screen text-white flex items-center justify-center">
@@ -437,7 +438,7 @@
                   <a href="#proposal" className="group bg-neon text-black px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-white transition-colors">
                     <Terminal size={20} /> Initialize Protocol
                   </a>
-                  <a href="#sign" onClick={(e) => { e.preventDefault(); notifyEvent('cta_review_sign_click', {}, { interactive: true }); window.dispatchEvent(new CustomEvent('open-review-sign-portal')); }} className="group border border-neon text-neon px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-neon hover:text-black transition-colors">
+                  <a href="#sign" onClick={(e) => { e.preventDefault(); notifyEvent('cta_review_sign_click', {}, { interactive: true }); window.dispatchEvent(new CustomEvent('open-manifesto-gate')); }} className="group border border-neon text-neon px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-neon hover:text-black transition-colors">
                     <ShieldAlert size={20} /> Review & Sign
                   </a>
                   <div className="border border-gray-700 px-8 py-4 flex items-center gap-4 bg-black/50 backdrop-blur-sm">
@@ -1184,11 +1185,52 @@
               <ManifestPlan />
               <Pricing />
               <FixedCTA />
+              <ManifestoGate />
               <ToastHost />
               <ReviewSignPortal />
             </div>
           );
         }
+
+        // Manifesto Gate (modal)
+        const ManifestoGate = () => {
+          const [open, setOpen] = useState(false);
+          const docId = '1r6HGpR1DKIcxUtr-xyyLTzuDrhqIhaIQ';
+          const docUrl = `https://drive.google.com/file/d/${docId}/preview`;
+          useEffect(() => {
+            const handler = () => setOpen(true);
+            window.addEventListener('open-manifesto-gate', handler);
+            return () => window.removeEventListener('open-manifesto-gate', handler);
+          }, []);
+          if (!open) return null;
+          const continueFlow = () => {
+            setOpen(false);
+            notifyEvent('manifesto_reviewed', {}, { interactive: true });
+            window.dispatchEvent(new CustomEvent('open-real-review-sign-portal'));
+          };
+          return (
+            <div className="fixed inset-0 z-[120] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-gray-950 border border-neon w-full max-w-5xl">
+                <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                  <h3 className="text-white font-bold uppercase">The Plan / Manifesto</h3>
+                  <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white text-xs">Close</button>
+                </div>
+                <div className="p-4">
+                  <div className="h-[70vh] relative bg-black border border-neon shadow-[0_0_30px_rgba(0,255,194,0.15)] overflow-hidden">
+                    <div className="absolute inset-0 pointer-events-none opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+                    <iframe title="Manifesto" src={docUrl} className="w-full h-full grayscale-[10%] contrast-110"/>
+                    <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/80 to-transparent"></div>
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent"></div>
+                  </div>
+                  <div className="flex justify-between items-center mt-4">
+                    <span className="mono text-xs text-neon">Step 1 of 2: Review the manifesto</span>
+                    <button onClick={continueFlow} className="px-4 py-2 bg-neon text-black font-bold rounded hover:bg-white">Continue to Review & Sign</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
 
         // Simple toast host
         const ToastHost = () => {
@@ -1227,8 +1269,8 @@
 
           useEffect(() => {
             const openHandler = () => setOpen(true);
-            window.addEventListener('open-review-sign-portal', openHandler);
-            return () => window.removeEventListener('open-review-sign-portal', openHandler);
+            window.addEventListener('open-real-review-sign-portal', openHandler);
+            return () => window.removeEventListener('open-real-review-sign-portal', openHandler);
           }, []);
 
           useEffect(() => {
@@ -1372,8 +1414,8 @@
         const FixedCTA = () => {
           const handleClick = (e) => {
             e.preventDefault();
-            notifyEvent('cta_fixed_review_sign_click');
-            window.dispatchEvent(new CustomEvent('open-review-sign-portal'));
+            notifyEvent('cta_fixed_review_sign_click', {}, { interactive: true });
+            window.dispatchEvent(new CustomEvent('open-manifesto-gate'));
           };
           return (
             <div className="fixed bottom-0 left-0 right-0 z-40">
