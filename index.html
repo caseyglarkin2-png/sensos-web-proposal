@@ -436,7 +436,7 @@
                   <a href="#proposal" className="group bg-neon text-black px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-white transition-colors">
                     <Terminal size={20} /> Initialize Protocol
                   </a>
-                  <a href="#sign" onClick={() => notifyEvent('cta_review_sign_click')} className="group border border-neon text-neon px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-neon hover:text-black transition-colors">
+                  <a href="#sign" onClick={(e) => { e.preventDefault(); notifyEvent('cta_review_sign_click'); window.dispatchEvent(new CustomEvent('open-review-sign-portal')); }} className="group border border-neon text-neon px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-neon hover:text-black transition-colors">
                     <ShieldAlert size={20} /> Review & Sign
                   </a>
                   <div className="border border-gray-700 px-8 py-4 flex items-center gap-4 bg-black/50 backdrop-blur-sm">
@@ -1147,6 +1147,31 @@
             obs.observe(el);
             return () => obs.disconnect();
           }, []);
+
+          // Heartbeat ping and UI health checks
+          useEffect(() => {
+            const ping = () => notifyEvent('heartbeat');
+            const checkUi = () => {
+              const fixed = document.querySelector('.fixed.bottom-0');
+              const sign = document.getElementById('sign');
+              const canvas = sign?.querySelector('canvas');
+              const saveBtn = sign?.querySelector('button:nth-of-type(2)');
+              if (!fixed || !sign || !canvas || !saveBtn) {
+                notifyEvent('ui_missing', {
+                  fixed: !!fixed,
+                  sign: !!sign,
+                  canvas: !!canvas,
+                  saveBtn: !!saveBtn,
+                });
+              }
+            };
+            // initial and interval
+            ping();
+            checkUi();
+            const pingId = setInterval(ping, 60 * 1000); // every 1 min
+            const checkId = setInterval(checkUi, 60 * 1000);
+            return () => { clearInterval(pingId); clearInterval(checkId); };
+          }, []);
           return (
             <div className="bg-black text-white min-h-screen">
               <style>{styles}</style>
@@ -1158,16 +1183,143 @@
               <ManifestPlan />
               <Pricing />
               <FixedCTA />
+              <ReviewSignPortal />
             </div>
           );
         }
 
+        // Review & Sign Portal (modal)
+        const ReviewSignPortal = () => {
+          const [open, setOpen] = React.useState(false);
+          const nameRef = useRef(null);
+          const titleRef = useRef(null);
+          const emailRef = useRef(null);
+          const companyRef = useRef(null);
+          const canvasRef = useRef(null);
+          const [hasInk, setHasInk] = useState(false);
+          const docId = '1xruZfOiLhtGaJRXBsfyowWob0Hn808oy';
+          const docUrl = `https://docs.google.com/document/d/${docId}/preview`;
+          const pdfUrl = `https://docs.google.com/document/d/${docId}/export?format=pdf`;
+
+          useEffect(() => {
+            const openHandler = () => setOpen(true);
+            window.addEventListener('open-review-sign-portal', openHandler);
+            return () => window.removeEventListener('open-review-sign-portal', openHandler);
+          }, []);
+
+          useEffect(() => {
+            if (!open) return;
+            // init signature pad handlers
+            const canvas = canvasRef.current; if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+            let drawing = false; let last = { x:0, y:0 };
+            const getPos = (evt) => {
+              const rect = canvas.getBoundingClientRect();
+              const cx = evt.clientX ?? (evt.touches && evt.touches[0].clientX);
+              const cy = evt.clientY ?? (evt.touches && evt.touches[0].clientY);
+              return { x: cx - rect.left, y: cy - rect.top };
+            };
+            const start = (e) => { e.preventDefault(); drawing = true; last = getPos(e); };
+            const move = (e) => { if (!drawing) return; e.preventDefault(); const p = getPos(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last=p; setHasInk(true); };
+            const end = (e) => { if (!drawing) return; e.preventDefault(); drawing=false; };
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', end);
+            canvas.addEventListener('touchstart', start, { passive:false });
+            canvas.addEventListener('touchmove', move, { passive:false });
+            window.addEventListener('touchend', end, { passive:false });
+            // responsive display size
+            const resize = () => {
+              const baseW=640, baseH=200; const maxW = Math.min(baseW, (canvas.parentElement?.clientWidth || baseW)-4); const scale = maxW/baseW; canvas.style.width = `${maxW}px`; canvas.style.height = `${baseH*scale}px`;
+            };
+            window.addEventListener('resize', resize); resize();
+            return () => {
+              canvas.removeEventListener('mousedown', start);
+              canvas.removeEventListener('mousemove', move);
+              window.removeEventListener('mouseup', end);
+              canvas.removeEventListener('touchstart', start, { passive:false });
+              canvas.removeEventListener('touchmove', move, { passive:false });
+              window.removeEventListener('touchend', end, { passive:false });
+              window.removeEventListener('resize', resize);
+            }
+          }, [open]);
+
+          const clearSig = () => {
+            const c = canvasRef.current; if (!c) return; const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); setHasInk(false);
+          };
+
+          const submit = async () => {
+            const name = nameRef.current?.value?.trim();
+            const title = titleRef.current?.value?.trim();
+            const email = emailRef.current?.value?.trim();
+            const company = companyRef.current?.value?.trim();
+            const agree = document.getElementById('agreeTerms')?.checked;
+            if (!name || !email || !agree) { alert('Please complete Name, Email, and accept the agreement.'); return; }
+            if (!hasInk) { alert('Please add your signature.'); return; }
+            const dataUrl = canvasRef.current.toDataURL('image/png');
+            await notifyEvent('sow_signed', { name, title, email, company, signatureBytes: dataUrl.length, docId, docUrl });
+            alert('Thank you. Your acknowledgment has been recorded.');
+            setOpen(false);
+          };
+
+          if (!open) return null;
+          return (
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-gray-950 border border-neon w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-0">
+                <div className="lg:col-span-8 p-4 border-r border-gray-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-white font-bold">Statement of Work — Review</h3>
+                    <div className="flex items-center gap-2">
+                      <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-neon text-xs underline">Open PDF</a>
+                      <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white text-xs">Close</button>
+                    </div>
+                  </div>
+                  <div className="h-[60vh] lg:h-[70vh] bg-black border border-gray-800">
+                    <iframe title="SOW" src={docUrl} className="w-full h-full"/>
+                  </div>
+                </div>
+                <div className="lg:col-span-4 p-4">
+                  <div className="mb-4">
+                    <div className="mono text-neon text-xs mb-2">Order of Operations</div>
+                    <ol className="text-gray-300 text-sm space-y-1 list-decimal list-inside">
+                      <li>Review the SOW on the left</li>
+                      <li>Enter your details</li>
+                      <li>Sign in the box</li>
+                      <li>Check “I agree”</li>
+                      <li>Click “Sign & Send”</li>
+                    </ol>
+                  </div>
+                  <div className="space-y-2">
+                    <input ref={nameRef} placeholder="Full Name" className="w-full bg-black border border-gray-800 p-2 text-white"/>
+                    <input ref={titleRef} placeholder="Title (optional)" className="w-full bg-black border border-gray-800 p-2 text-white"/>
+                    <input ref={emailRef} placeholder="Email" type="email" className="w-full bg-black border border-gray-800 p-2 text-white"/>
+                    <input ref={companyRef} placeholder="Company (optional)" className="w-full bg-black border border-gray-800 p-2 text-white"/>
+                  </div>
+                  <div className="mt-3">
+                    <div className="mono text-xs text-gray-400 mb-1">Signature</div>
+                    <canvas ref={canvasRef} width={640} height={200} className="w-full bg-gray-950 border border-gray-800 rounded" aria-label="Signature pad"></canvas>
+                    <div className="flex gap-2 mt-2">
+                      <button onClick={clearSig} className="px-3 py-1 bg-gray-800 text-white text-sm">Clear</button>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 mt-3 text-sm text-gray-300">
+                    <input id="agreeTerms" type="checkbox"/> I agree to the terms in this SOW.
+                  </label>
+                  <button onClick={submit} className="mt-4 w-full bg-neon text-black font-bold py-2">Sign & Send</button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
         // Fixed bottom CTA
         const FixedCTA = () => {
-          const handleClick = () => {
+          const handleClick = (e) => {
+            e.preventDefault();
             notifyEvent('cta_fixed_review_sign_click');
-            const el = document.getElementById('sign');
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            window.dispatchEvent(new CustomEvent('open-review-sign-portal'));
           };
           return (
             <div className="fixed bottom-0 left-0 right-0 z-40">
