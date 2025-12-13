@@ -1078,23 +1078,6 @@
                     </tbody>
                   </table>
                 </div>
-
-                {/* Digital Signature Option */}
-                <div id="sign" className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="bg-black border border-gray-800 p-8 rounded-xl">
-                    <h3 className="text-2xl font-bold mb-2">Authorize The Proposal</h3>
-                    <p className="text-gray-400 text-sm mb-6">Optionally add a digital signature to acknowledge receipt or intent. Your signature is stored locally until you export it.</p>
-                    <SignaturePad />
-                  </div>
-                  <div className="bg-gray-900 border border-gray-800 p-8 rounded-xl">
-                    <h4 className="text-neon mono text-xs mb-2">Notes</h4>
-                    <ul className="text-sm text-gray-400 space-y-2">
-                      <li>Signature is captured as a PNG image (base64).</li>
-                      <li>No backend is connected. Use Export to download.</li>
-                      <li>Works with mouse and touch. Clear to reset.</li>
-                    </ul>
-                  </div>
-                </div>
               </div>
             </section>
           );
