@@ -459,10 +459,6 @@
                     <div className="h-10 w-10 bg-gray-800 rounded-full flex items-center justify-center font-bold text-neon border border-neon">CL</div>
                   </div>
                 </div>
-                {/* Manifesto Podcast Section */}
-                <div className="mt-10">
-                  <ManifestoPodcast />
-                </div>
               </div>
 
               <div className="absolute bottom-10 right-10 hidden md:block">
@@ -505,6 +501,86 @@
             </div>
           );
         };
+
+        // Compact Bottom Module: Podcast + Agreement + Sign with Countdown
+        function ManifestoExperience() {
+          const docId = '1tAgP1DDQbuKkqzKschxu4WU0TnqwMu8lEipqii1kLcg';
+          const docPreview = `https://docs.google.com/document/d/${docId}/preview`;
+          const podcastId = '1MxHxOc8p0LAhKrHzmCojH-bhNFN_HmRv';
+          const podcastUrl = `https://drive.google.com/file/d/${podcastId}/preview`;
+          
+          // Countdown state
+          const DEADLINE_TS = Date.parse('2025-12-15T05:00:00Z');
+          const [remaining, setRemaining] = useState(Math.max(0, DEADLINE_TS - Date.now()));
+          const [expired, setExpired] = useState(DEADLINE_TS - Date.now() <= 0);
+          
+          useEffect(() => {
+            if (expired) return;
+            const tick = () => {
+              const rem = DEADLINE_TS - Date.now();
+              setRemaining(Math.max(0, rem));
+              if (rem <= 0) setExpired(true);
+            };
+            tick();
+            const id = setInterval(tick, 1000);
+            return () => clearInterval(id);
+          }, [expired]);
+          
+          const fmt = (ms) => {
+            const s = Math.floor(ms/1000);
+            const d = Math.floor(s/86400);
+            const h = Math.floor((s%86400)/3600);
+            const m = Math.floor((s%3600)/60);
+            const ss = s%60;
+            return d>0 ? `${d}d ${h}h ${m}m ${ss}s` : `${h}h ${m}m ${ss}s`;
+          };
+          
+          return (
+            <section id="review-sign" className="py-12 px-6 md:px-12 bg-black border-t-2 border-neon">
+              <div className="max-w-7xl mx-auto">
+                {/* Header with Countdown */}
+                <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
+                  <div>
+                    <h2 className="text-3xl font-black uppercase text-white">Review & Sign</h2>
+                    <p className="mono text-xs text-gray-400">Listen to the podcast while you read the agreement</p>
+                  </div>
+                  <div className={`px-4 py-2 border ${expired ? 'border-red-500 bg-red-900/20' : 'border-neon bg-neon/10'} rounded`}>
+                    <span className={`mono text-sm font-bold ${expired ? 'text-red-400' : 'text-neon'}`}>
+                      {expired ? 'OFFER EXPIRED' : `⏱ ${fmt(remaining)}`}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                  {/* Left: Compact Podcast */}
+                  <div className="lg:col-span-4 space-y-4">
+                    <div className="bg-gray-900 border border-gray-800 p-3 rounded">
+                      <h4 className="mono text-xs text-neon mb-2">🎙 THE IMPETUS</h4>
+                      <div className="aspect-video w-full border border-gray-700 rounded overflow-hidden">
+                        <iframe title="Podcast" src={podcastUrl} allow="autoplay" className="w-full h-full" />
+                      </div>
+                    </div>
+                    {/* Sign CTA */}
+                    <button 
+                      onClick={() => window.dispatchEvent(new CustomEvent('open-real-review-sign-portal'))} 
+                      disabled={expired}
+                      className={`w-full py-4 font-bold uppercase text-lg rounded transition-all ${expired ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-neon text-black hover:bg-white'}`}
+                    >
+                      {expired ? 'Signing Closed' : 'Sign The Agreement'}
+                    </button>
+                  </div>
+                  
+                  {/* Right: Document Viewer */}
+                  <div className="lg:col-span-8 bg-black border border-neon shadow-[0_0_20px_rgba(0,255,194,0.1)] rounded overflow-hidden relative">
+                    <div className="absolute inset-0 pointer-events-none opacity-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+                    <iframe title="Agreement" src={docPreview} className="w-full h-[50vh] lg:h-[60vh]" />
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        }
 
         // The Problem Component
         const TheProblem = () => {
@@ -567,38 +643,61 @@
           
           const activateVoice = async () => {
             if (loading || isSpeaking) return;
+            
+            // Check for API key first
+            const apiKey = getApiKey();
+            if (!apiKey) {
+              setStatusText("API KEY REQUIRED. CLICK SHIELD ICON BELOW.");
+              return;
+            }
+            
             setLoading(true);
             setStatusText("ANALYZING NETWORK FOR ANOMALIES...");
 
-            // 1. Generate a Crisis Scenario Script
-            const script = await generateText("Generate a very short, urgent, 2-sentence executive summary of a critical supply chain disruption (e.g. 'Temperature excursion detected in Dubai, shipment 404'). Use military/AI jargon. End with 'Rerouting Initiated.'");
-            
-            if (script && script !== "System Error." && script !== "Connection Lost.") {
-              setStatusText(script.toUpperCase());
+            try {
+              // 1. Generate a Crisis Scenario Script
+              const script = await generateText("Generate a very short, urgent, 2-sentence executive summary of a critical supply chain disruption (e.g. 'Temperature excursion detected in Dubai, shipment 404'). Use military/AI jargon. End with 'Rerouting Initiated.'");
               
-              // 2. Generate Audio
-              const audioData = await generateSpeech(script);
-              
-              if (audioData) {
-                setLoading(false);
-                setIsSpeaking(true);
-                const wavBlob = base64ToWav(audioData);
-                const audioUrl = URL.createObjectURL(wavBlob);
-                const audio = new Audio(audioUrl);
+              if (script && script !== "System Error." && script !== "Connection Lost." && script !== "MISSING_KEY") {
+                setStatusText(script.toUpperCase());
                 
-                audio.onended = () => {
-                  setIsSpeaking(false);
-                  setStatusText("TRANSMISSION COMPLETE.");
-                };
+                // 2. Generate Audio
+                const audioData = await generateSpeech(script);
                 
-                audio.play();
+                if (audioData) {
+                  setLoading(false);
+                  setIsSpeaking(true);
+                  const wavBlob = base64ToWav(audioData);
+                  const audioUrl = URL.createObjectURL(wavBlob);
+                  const audio = new Audio(audioUrl);
+                  
+                  audio.onerror = () => {
+                    setIsSpeaking(false);
+                    setStatusText("AUDIO PLAYBACK ERROR.");
+                  };
+                  
+                  audio.onended = () => {
+                    setIsSpeaking(false);
+                    setStatusText("TRANSMISSION COMPLETE.");
+                  };
+                  
+                  audio.play().catch(() => {
+                    setIsSpeaking(false);
+                    setLoading(false);
+                    setStatusText("BROWSER BLOCKED AUDIO. CLICK TO RETRY.");
+                  });
+                } else {
+                  setLoading(false);
+                  setStatusText("AUDIO SYNTHESIS FAILED. CHECK API KEY.");
+                }
               } else {
                 setLoading(false);
-                setStatusText("AUDIO SYNTHESIS FAILED.");
+                setStatusText(script === "MISSING_KEY" ? "API KEY REQUIRED." : "DATA STREAM INTERRUPTED.");
               }
-            } else {
+            } catch (err) {
+              console.error('VoiceEngine error:', err);
               setLoading(false);
-              setStatusText("DATA STREAM INTERRUPTED.");
+              setStatusText("SYSTEM ERROR. CHECK CONSOLE.");
             }
           };
 
@@ -1386,6 +1485,7 @@
               <Strategy />
               <ManifestPlan />
               <Pricing />
+              <ManifestoExperience />
               <FixedCTA remaining={remaining} expired={expired} signed={signed} />
               <NotifyModal />
               <ManifestoReader />
