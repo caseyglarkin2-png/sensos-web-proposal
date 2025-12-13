@@ -406,6 +406,33 @@
             0% { opacity: .35; height: 3px; }
             100% { opacity: 1; height: 100%; }
           }
+
+          @keyframes pulse-neon {
+            0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 194, 0.4), 0 0 20px rgba(0, 255, 194, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 194, 0.8), 0 0 40px rgba(0, 255, 194, 0.4), 0 0 60px rgba(0, 255, 194, 0.2); }
+          }
+
+          .pulse-glow {
+            animation: pulse-neon 2s ease-in-out infinite;
+          }
+
+          @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+          }
+
+          .confetti-piece {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: 0;
+            animation: confetti-fall 3s ease-out forwards;
+            z-index: 9999;
+          }
+
+          @media (max-width: 768px) {
+            .mobile-touch-target { min-height: 48px; }
+          }
         `;
 
         // Section Header Component
@@ -553,22 +580,35 @@
                 
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                  {/* Left: Compact Podcast */}
+                  {/* Left: Compact Podcast + Summary */}
                   <div className="lg:col-span-4 space-y-4">
+                    {/* TL;DR Summary */}
+                    <TLDRSummary />
+                    
                     <div className="bg-gray-900 border border-gray-800 p-3 rounded">
                       <h4 className="mono text-xs text-neon mb-2">🎙 THE IMPETUS</h4>
                       <div className="aspect-video w-full border border-gray-700 rounded overflow-hidden">
                         <iframe title="Podcast" src={podcastUrl} allow="autoplay" className="w-full h-full" />
                       </div>
                     </div>
-                    {/* Sign CTA */}
+                    
+                    {/* Savings Callout */}
+                    <div className="bg-green-900/20 border border-green-500/50 p-3 rounded text-center">
+                      <div className="text-green-400 font-black text-2xl">$229,500+</div>
+                      <div className="text-green-300 text-xs">Year 1 savings waiting for your signature</div>
+                    </div>
+                    
+                    {/* Sign CTA with Pulse */}
                     <button 
                       onClick={() => window.dispatchEvent(new CustomEvent('open-real-review-sign-portal'))} 
                       disabled={expired}
-                      className={`w-full py-4 font-bold uppercase text-lg rounded transition-all ${expired ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-neon text-black hover:bg-white'}`}
+                      className={`w-full py-4 font-bold uppercase text-lg rounded transition-all mobile-touch-target ${expired ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-neon text-black hover:bg-white pulse-glow'}`}
                     >
-                      {expired ? 'Signing Closed' : 'Sign The Agreement'}
+                      {expired ? 'Signing Closed' : '✍️ Sign The Agreement'}
                     </button>
+                    
+                    {/* Trust Badge */}
+                    <TrustBadge />
                   </div>
                   
                   {/* Right: Document Viewer */}
@@ -1342,6 +1382,7 @@
             setIsPlaying(false);
             setOpen(false);
             notifyEvent('manifesto_terminated');
+            window.dispatchEvent(new CustomEvent('manifesto-closed-scroll'));
           };
 
           if (!open) return null;
@@ -1458,6 +1499,18 @@
               notifyEvent('notify_connected');
             }
           }, []);
+          // Auto-scroll to sign section after manifesto closes
+          useEffect(() => {
+            const handler = () => {
+              setTimeout(() => {
+                const el = document.getElementById('review-sign');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 300);
+            };
+            window.addEventListener('manifesto-closed-scroll', handler);
+            return () => window.removeEventListener('manifesto-closed-scroll', handler);
+          }, []);
+
           return (
             <div className="bg-black text-white min-h-screen">
               <style>{styles}</style>
@@ -1473,6 +1526,8 @@
               <NotifyModal />
               <ManifestoReader />
               <ToastHost />
+              <ExitIntentModal />
+              <ConfettiCelebration />
               <ReviewSignPortal deadlineTs={DEADLINE_TS} expired={expired} setSigned={setSigned} />
             </div>
           );
@@ -1587,6 +1642,140 @@
           );
         };
 
+        // Exit Intent Modal
+        const ExitIntentModal = () => {
+          const [show, setShow] = useState(false);
+          const [dismissed, setDismissed] = useState(false);
+          useEffect(() => {
+            if (dismissed || localStorage.getItem('exit_intent_dismissed')) return;
+            const handler = (e) => {
+              if (e.clientY <= 5 && !show && !dismissed) {
+                setShow(true);
+                notifyEvent('exit_intent_triggered');
+              }
+            };
+            document.addEventListener('mouseout', handler);
+            return () => document.removeEventListener('mouseout', handler);
+          }, [show, dismissed]);
+          const dismiss = () => {
+            setShow(false);
+            setDismissed(true);
+            localStorage.setItem('exit_intent_dismissed', 'true');
+          };
+          const stayAndSign = () => {
+            dismiss();
+            notifyEvent('exit_intent_stayed');
+            window.dispatchEvent(new CustomEvent('open-manifesto-reader'));
+          };
+          if (!show) return null;
+          return (
+            <div className="fixed inset-0 z-[150] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-gray-950 border-2 border-red-500 p-8 max-w-md w-full text-center shadow-[0_0_60px_rgba(255,42,0,0.3)]">
+                <div className="text-6xl mb-4">⚠️</div>
+                <h3 className="text-2xl font-black text-white uppercase mb-2">Wait!</h3>
+                <p className="text-gray-300 mb-4">You're about to leave without reviewing the proposal.</p>
+                <div className="bg-green-900/30 border border-green-500/50 p-3 rounded mb-6">
+                  <span className="text-green-400 font-bold text-lg">$229,500+ in Year 1 savings</span>
+                  <span className="text-gray-400 text-sm block">waiting for your signature</span>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <button onClick={stayAndSign} className="w-full py-3 bg-neon text-black font-bold uppercase pulse-glow mobile-touch-target">Review & Sign Now</button>
+                  <button onClick={dismiss} className="text-gray-500 text-sm hover:text-white">No thanks, I'll pass on $229K savings</button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Confetti Celebration
+        const ConfettiCelebration = () => {
+          const [pieces, setPieces] = useState([]);
+          useEffect(() => {
+            const handler = () => {
+              const colors = ['#00FFC2', '#FF2A00', '#FFD700', '#FF69B4', '#00BFFF', '#FFFFFF'];
+              const newPieces = Array.from({ length: 50 }, (_, i) => ({
+                id: i,
+                left: Math.random() * 100,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                delay: Math.random() * 0.5,
+                size: Math.random() * 8 + 6,
+              }));
+              setPieces(newPieces);
+              setTimeout(() => setPieces([]), 3500);
+            };
+            window.addEventListener('confetti', handler);
+            return () => window.removeEventListener('confetti', handler);
+          }, []);
+          return (
+            <>
+              {pieces.map(p => (
+                <div
+                  key={p.id}
+                  className="confetti-piece"
+                  style={{
+                    left: `${p.left}%`,
+                    backgroundColor: p.color,
+                    width: `${p.size}px`,
+                    height: `${p.size}px`,
+                    animationDelay: `${p.delay}s`,
+                    borderRadius: Math.random() > 0.5 ? '50%' : '0',
+                  }}
+                />
+              ))}
+            </>
+          );
+        };
+
+        // Progress Breadcrumb
+        const ProgressBreadcrumb = ({ step }) => {
+          const steps = ['Review', 'Sign', 'Done'];
+          return (
+            <div className="flex items-center gap-2 mb-4">
+              {steps.map((s, i) => (
+                <React.Fragment key={s}>
+                  <div className={`flex items-center gap-1 ${i < step ? 'text-neon' : i === step ? 'text-white' : 'text-gray-600'}`}>
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i < step ? 'bg-neon text-black' : i === step ? 'bg-white text-black' : 'bg-gray-800 text-gray-500'}`}>
+                      {i < step ? '✓' : i + 1}
+                    </span>
+                    <span className="mono text-xs hidden sm:inline">{s}</span>
+                  </div>
+                  {i < steps.length - 1 && <div className={`w-8 h-0.5 ${i < step ? 'bg-neon' : 'bg-gray-800'}`}></div>}
+                </React.Fragment>
+              ))}
+            </div>
+          );
+        };
+
+        // Trust Badge
+        const TrustBadge = () => (
+          <div className="flex items-center gap-2 text-gray-400 text-xs mt-3 p-2 bg-gray-900/50 rounded border border-gray-800">
+            <ShieldAlert size={14} className="text-neon" />
+            <span>Secure • Confidential • No commitment until signed</span>
+          </div>
+        );
+
+        // TL;DR Summary Card
+        const TLDRSummary = () => (
+          <div className="bg-gray-900/80 border border-gray-700 p-4 rounded-lg mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Zap size={16} className="text-neon" />
+              <span className="mono text-xs text-neon uppercase">TL;DR — 30 Second Summary</span>
+            </div>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li className="flex items-start gap-2"><span className="text-neon">→</span> Rebrand + WebGL site: <span className="text-neon font-bold">$75K</span> <span className="text-red-400 line-through text-xs">$111K</span> <span className="text-green-400 text-xs">(-$36.5K)</span></li>
+              <li className="flex items-start gap-2"><span className="text-neon">→</span> Manifest booth design: <span className="text-neon font-bold">$15K</span> <span className="text-red-400 line-through text-xs">$58K</span> <span className="text-green-400 text-xs">(-$43K)</span></li>
+              <li className="flex items-start gap-2"><span className="text-neon">→</span> Monthly retainer: <span className="text-neon font-bold">$12K/mo</span> <span className="text-red-400 line-through text-xs">$24.5K</span> <span className="text-green-400 text-xs">(-$12.5K/mo)</span></li>
+              <li className="flex items-start gap-2 pt-2 border-t border-gray-700 mt-2">
+                <span className="text-green-400">💰</span>
+                <div>
+                  <span className="text-green-400 font-bold">Year 1 Savings: $229,500+</span>
+                  <span className="text-gray-500 text-xs block">($79.5K upfront + $150K retainer savings)</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        );
+
 
         // Review & Sign Portal (modal)
         const ReviewSignPortal = ({ deadlineTs, expired, setSigned }) => {
@@ -1698,6 +1887,8 @@
                 localStorage.setItem('sow_signed_at', signedAt);
                 setSigned(true);
                 notifyEvent('sow_signed_recorded', { signedAt });
+                // Trigger confetti celebration!
+                window.dispatchEvent(new CustomEvent('confetti'));
               } else {
                 console.warn('jsPDF not available');
               }
@@ -1789,9 +1980,13 @@
                   <label className="flex items-center gap-2 mt-3 text-sm text-gray-300">
                     <input id="agreeTerms" type="checkbox"/> I agree to the terms in this SOW.
                   </label>
+                  
+                  {/* Trust Badge */}
+                  <TrustBadge />
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
-                    <button onClick={submit} disabled={expired} className="w-full bg-neon text-black font-bold py-2 disabled:opacity-50 disabled:cursor-not-allowed">Sign & Send</button>
-                    <button onClick={sendPdfEmail} disabled={!canSend} className="w-full bg-gray-900 text-white border border-gray-700 rounded disabled:opacity-50">Send Signed PDF by Email</button>
+                    <button onClick={submit} disabled={expired} className={`w-full bg-neon text-black font-bold py-2 mobile-touch-target disabled:opacity-50 disabled:cursor-not-allowed ${!expired && !canSend ? 'pulse-glow' : ''}`}>Sign & Send</button>
+                    <button onClick={sendPdfEmail} disabled={!canSend} className="w-full bg-gray-900 text-white border border-gray-700 rounded mobile-touch-target disabled:opacity-50">Send Signed PDF by Email</button>
                   </div>
                 </div>
               </div>
@@ -1814,13 +2009,18 @@
             notifyEvent('cta_fixed_review_sign_click', {}, { interactive: true });
             window.dispatchEvent(new CustomEvent('open-manifesto-reader'));
           };
-          const status = expired ? 'Offer expired' : signed ? `Signed` : `Offer expires in ${fmt(remaining)}`;
-          const statusClass = expired ? 'text-red-400' : 'text-neon';
+          const status = expired ? 'Offer expired' : signed ? `✅ Signed!` : `⏱ ${fmt(remaining)}`;
+          const statusClass = expired ? 'text-red-400' : signed ? 'text-green-400' : 'text-neon';
           return (
             <div className="fixed bottom-0 left-0 right-0 z-40">
-              <div className="mx-4 mb-4 bg-black/70 backdrop-blur-sm border border-neon px-4 py-3 flex items-center justify-between">
-                <span className={`mono text-xs ${statusClass}`}>{status}</span>
-                <button onClick={handleClick} className="px-4 py-2 bg-neon text-black font-bold rounded hover:bg-white">Open</button>
+              <div className="mx-4 mb-4 bg-black/90 backdrop-blur-sm border border-neon px-4 py-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className={`mono text-xs ${statusClass}`}>{status}</span>
+                  {!expired && !signed && <span className="text-green-400 text-xs font-bold hidden sm:inline">💰 $229K+ savings</span>}
+                </div>
+                <button onClick={handleClick} disabled={signed} className={`px-4 py-2 font-bold rounded mobile-touch-target transition-all ${signed ? 'bg-gray-700 text-gray-400 cursor-default' : 'bg-neon text-black hover:bg-white pulse-glow'}`}>
+                  {signed ? 'Complete' : 'Review & Sign'}
+                </button>
               </div>
             </div>
           );
