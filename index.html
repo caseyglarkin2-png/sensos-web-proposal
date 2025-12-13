@@ -1174,6 +1174,13 @@
             const checkId = setInterval(checkUi, 60 * 1000);
             return () => { clearInterval(pingId); clearInterval(checkId); };
           }, []);
+          // Notify when webhook configured
+          useEffect(() => {
+            const url = getNotifyUrl();
+            if (url) {
+              notifyEvent('notify_connected');
+            }
+          }, []);
           return (
             <div className="bg-black text-white min-h-screen">
               <style>{styles}</style>
@@ -1185,12 +1192,60 @@
               <ManifestPlan />
               <Pricing />
               <FixedCTA />
+              <NotifyModal />
               <ManifestoGate />
               <ToastHost />
               <ReviewSignPortal />
             </div>
           );
         }
+
+        // Notifications configuration modal
+        const NotifyModal = () => {
+          const [open, setOpen] = useState(false);
+          const [url, setUrl] = useState("");
+          const [connected, setConnected] = useState(!!getNotifyUrl());
+
+          useEffect(() => {
+            setUrl(getNotifyUrl() || "");
+          }, []);
+
+          const save = () => {
+            if (url) {
+              localStorage.setItem('notify_url', url);
+              setConnected(true);
+              window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Webhook connected.' } }));
+              notifyEvent('notify_saved', { url });
+              setOpen(false);
+            }
+          };
+
+          const test = () => {
+            notifyEvent('notify_test', { example: 'hello' }, { interactive: true });
+          };
+
+          return (
+            <>
+              <button onClick={() => setOpen(true)} className="fixed bottom-16 left-4 z-50 bg-gray-900 text-gray-500 px-3 py-2 rounded-full hover:text-white border border-gray-800">
+                {connected ? 'Notifications: On' : 'Notifications: Off'}
+              </button>
+              {!open ? null : (
+                <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                  <div className="bg-gray-900 border border-neon p-6 rounded-xl w-full max-w-md">
+                    <h3 className="text-white font-bold mb-3">Notifications Webhook</h3>
+                    <p className="text-gray-400 text-sm mb-4">Paste a webhook URL (e.g., webhook.site). Events will be sent silently.</p>
+                    <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className="w-full bg-black border border-gray-700 p-2 text-white" />
+                    <div className="flex justify-end gap-2 mt-4">
+                      <button onClick={() => setOpen(false)} className="text-gray-400">Cancel</button>
+                      <button onClick={test} className="px-3 py-1 bg-gray-800 text-white">Send Test</button>
+                      <button onClick={save} className="px-3 py-1 bg-neon text-black font-bold">Save</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        };
 
         // Manifesto Gate (modal)
         const ManifestoGate = () => {
