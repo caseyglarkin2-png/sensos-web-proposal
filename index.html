@@ -834,7 +834,7 @@
           };
 
           return (
-            <div className="mt-8 bg-black border border-gray-800 rounded-xl overflow-hidden">
+            <div className="mt-8 bg-black border border-gray-800 rounded-xl overflow-hidden strategy-drafter-section">
               <div className="p-4 bg-black border-b border-gray-800/50 flex justify-between items-center">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                   <Terminal size={18} className="text-neon" />
@@ -934,68 +934,260 @@
                     </div>
                   ))}
                 </div>
-
-                <DisruptionSimulator />
-
               </div>
             </section>
           );
         };
 
-        // Manifest Plan Component
+        // Section 03: The Competitive Edge - Why This Matters Now
+        const CompetitiveEdge = () => {
+          const advantages = [
+            {
+              title: 'Speed-to-Market',
+              stat: '8 weeks',
+              desc: 'From signed SOW to live rebrand. Agencies quote 16-20.',
+              icon: '⚡'
+            },
+            {
+              title: 'Sign Deals On-Site',
+              stat: 'Real-time',
+              desc: 'This proposal has a signature workflow. Imagine that at the booth.',
+              icon: '✍️'
+            },
+            {
+              title: 'Provable Attribution',
+              stat: '100%',
+              desc: 'Every lead tracked from booth scan to closed deal. No guessing.',
+              icon: '📊'
+            },
+            {
+              title: 'Network Depth',
+              stat: '2 Gen',
+              desc: 'Two generations of freight relationships. Doors that don\'t open for agencies.',
+              icon: '🔗'
+            }
+          ];
+          
+          return (
+            <section className="py-24 px-6 md:px-20 border-t border-gray-800/50">
+              <div className="max-w-6xl mx-auto">
+                <SectionHeader number="03" title="The Competitive Edge" subtitle="Why This Partnership Wins" />
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start mb-16">
+                  <div>
+                    <p className="text-xl text-gray-300 mb-6 leading-relaxed">
+                      Other agencies deliver decks. We deliver <span className="text-white font-bold">closed deals</span>.
+                    </p>
+                    <p className="text-gray-400 mb-6 leading-relaxed">
+                      The strategy, the timeframe, the messaging architecture—those are differentiators. 
+                      But the real unlock? <span className="text-neon">The network.</span>
+                    </p>
+                    <p className="text-gray-400 mb-8 leading-relaxed">
+                      Two generations of freight industry relationships. FreightWaves alumni network. 
+                      Podcast guests who became partners. When Sensos invests in DWTB?!, you're not just 
+                      buying services—you're buying <span className="text-white">access</span>.
+                    </p>
+                    
+                    <div className="p-4 bg-black border border-neon/30 shadow-[0_0_20px_rgba(0,255,194,0.1)]">
+                      <div className="mono text-xs text-neon mb-2">THE UNSPOKEN ADVANTAGE</div>
+                      <p className="text-sm text-gray-300 leading-relaxed">
+                        What happens when you combine best-in-class creative execution with a Rolodex 
+                        that took decades to build? Returns that blow traditional agency ROI out of the water.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {advantages.map((adv, i) => (
+                      <div key={i} className="bg-black border border-gray-800/50 p-5 hover:border-neon/30 transition-all group">
+                        <div className="text-2xl mb-3">{adv.icon}</div>
+                        <div className="mono text-2xl text-neon font-bold mb-1">{adv.stat}</div>
+                        <div className="text-white font-medium text-sm mb-2">{adv.title}</div>
+                        <div className="text-xs text-gray-500">{adv.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        };
+
+        // Manifest Plan Component with Monolith Mockup
         const ManifestPlan = () => {
+          const [hoveredZone, setHoveredZone] = useState(null);
+          
           return (
             <section className="py-24 px-6 md:px-20 border-t border-b border-gray-800/50">
               <div className="max-w-7xl mx-auto">
                 <SectionHeader number="06" title="Manifest 2026" subtitle="Operation: Dominance" />
                 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                  {/* The Booth */}
-                  <div className="lg:col-span-8 bg-black border border-gray-800 p-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-2 bg-neon text-black font-bold text-xs mono">BOOTH #337</div>
-                    <h3 className="text-3xl font-bold mb-2">THE MONOLITH</h3>
-                    <p className="text-gray-400 mb-6 max-w-xl">
-                      While competitors build white, friendly booths, we build a black box. 
-                      A semi-transparent mesh facade. You hear the hum, you see the glow, 
-                      but you have to <em className="text-white">enter</em> to see the tech.
-                    </p>
-                    <div className="grid grid-cols-2 gap-4 mt-8">
-                      <div className="bg-black/80 p-4 border-l-2 border-neon">
-                        <h4 className="text-neon font-bold mono text-sm mb-1">INTERIOR</h4>
-                        <p className="text-xs text-gray-500">The "LIA Pillar" hologram core. Real-time neural viz.</p>
+                {/* THE MONOLITH MOCKUP */}
+                <div className="mb-16 relative">
+                  <div className="text-center mb-8">
+                    <h3 className="text-3xl font-bold text-white mb-2">THE MONOLITH</h3>
+                    <p className="text-gray-400 text-sm">Booth #337 • 20x20 • The Black Box</p>
+                  </div>
+                  
+                  {/* 3D-ish Booth Visualization */}
+                  <div className="relative max-w-4xl mx-auto">
+                    {/* Main Booth Structure */}
+                    <div className="relative bg-black border-2 border-gray-800 aspect-[16/9] overflow-hidden">
+                      {/* Ambient Glow */}
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neon/10 via-transparent to-transparent animate-pulse"></div>
+                      
+                      {/* Mesh Facade Lines */}
+                      <div className="absolute inset-0 opacity-20">
+                        {[...Array(20)].map((_, i) => (
+                          <div key={i} className="absolute w-full h-px bg-gradient-to-r from-transparent via-neon to-transparent" style={{ top: `${(i + 1) * 5}%` }}></div>
+                        ))}
+                        {[...Array(30)].map((_, i) => (
+                          <div key={i} className="absolute h-full w-px bg-gradient-to-b from-transparent via-neon/50 to-transparent" style={{ left: `${(i + 1) * 3.33}%` }}></div>
+                        ))}
                       </div>
-                      <div className="bg-black/80 p-4 border-l-2 border-neon">
-                        <h4 className="text-neon font-bold mono text-sm mb-1">EXTERIOR</h4>
-                        <p className="text-xs text-gray-500">Sleek mesh. The "Velvet Rope" strategy.</p>
+                      
+                      {/* Central LIA Pillar */}
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-48 md:w-48 md:h-64">
+                        <div className="relative w-full h-full">
+                          <div className="absolute inset-0 border border-neon/50 bg-black/80"></div>
+                          <div className="absolute inset-2 border border-neon/30"></div>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="text-neon text-4xl md:text-6xl font-black animate-pulse">LIA</div>
+                              <div className="mono text-xs text-gray-500 mt-2">NEURAL CORE</div>
+                            </div>
+                          </div>
+                          {/* Hologram Effect */}
+                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-full h-8 bg-gradient-to-t from-neon/20 to-transparent"></div>
+                          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-4 bg-neon/20 blur-xl"></div>
+                        </div>
+                      </div>
+                      
+                      {/* Interactive Hotspots */}
+                      <div 
+                        className="absolute top-4 left-4 md:top-8 md:left-8 cursor-pointer group"
+                        onMouseEnter={() => setHoveredZone('entry')}
+                        onMouseLeave={() => setHoveredZone(null)}
+                      >
+                        <div className={`w-4 h-4 rounded-full ${hoveredZone === 'entry' ? 'bg-neon' : 'bg-neon/50'} animate-ping absolute`}></div>
+                        <div className={`w-4 h-4 rounded-full ${hoveredZone === 'entry' ? 'bg-neon' : 'bg-neon/50'} relative`}></div>
+                        {hoveredZone === 'entry' && (
+                          <div className="absolute left-6 top-0 bg-black border border-neon p-3 w-48 z-10">
+                            <div className="mono text-xs text-neon mb-1">VELVET ROPE ENTRY</div>
+                            <p className="text-xs text-gray-400">Controlled access. Creates intrigue and FOMO.</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div 
+                        className="absolute top-4 right-4 md:top-8 md:right-8 cursor-pointer"
+                        onMouseEnter={() => setHoveredZone('demo')}
+                        onMouseLeave={() => setHoveredZone(null)}
+                      >
+                        <div className={`w-4 h-4 rounded-full ${hoveredZone === 'demo' ? 'bg-neon' : 'bg-neon/50'} animate-ping absolute`}></div>
+                        <div className={`w-4 h-4 rounded-full ${hoveredZone === 'demo' ? 'bg-neon' : 'bg-neon/50'} relative`}></div>
+                        {hoveredZone === 'demo' && (
+                          <div className="absolute right-6 top-0 bg-black border border-neon p-3 w-48 z-10">
+                            <div className="mono text-xs text-neon mb-1">DEMO STATIONS</div>
+                            <p className="text-xs text-gray-400">Interactive WebGL experiences on tablets. Sign deals on-site.</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div 
+                        className="absolute bottom-4 left-1/2 -translate-x-1/2 cursor-pointer"
+                        onMouseEnter={() => setHoveredZone('scan')}
+                        onMouseLeave={() => setHoveredZone(null)}
+                      >
+                        <div className={`w-4 h-4 rounded-full ${hoveredZone === 'scan' ? 'bg-neon' : 'bg-neon/50'} animate-ping absolute`}></div>
+                        <div className={`w-4 h-4 rounded-full ${hoveredZone === 'scan' ? 'bg-neon' : 'bg-neon/50'} relative`}></div>
+                        {hoveredZone === 'scan' && (
+                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black border border-neon p-3 w-56 z-10">
+                            <div className="mono text-xs text-neon mb-1">QR CAPTURE ZONE</div>
+                            <p className="text-xs text-gray-400">Every visitor tracked. HubSpot integration. Provable ROI.</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Corner Accents */}
+                      <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-neon"></div>
+                      <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-neon"></div>
+                      <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-neon"></div>
+                      <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-neon"></div>
+                      
+                      {/* FOMO Indicators */}
+                      <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="mono text-xs text-red-400">CAPACITY LIMITED</span>
+                        </div>
+                      </div>
+                      
+                      <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8">
+                        <div className="flex items-center gap-2">
+                          <span className="mono text-xs text-gray-500">INVITE ONLY</span>
+                          <div className="w-2 h-2 bg-neon rounded-full"></div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Booth Legend */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                      <div className="text-center p-3 border border-gray-800/50">
+                        <div className="mono text-xl text-neon font-bold">20x20</div>
+                        <div className="text-xs text-gray-500">Square Feet</div>
+                      </div>
+                      <div className="text-center p-3 border border-gray-800/50">
+                        <div className="mono text-xl text-neon font-bold">4</div>
+                        <div className="text-xs text-gray-500">Demo Stations</div>
+                      </div>
+                      <div className="text-center p-3 border border-gray-800/50">
+                        <div className="mono text-xl text-neon font-bold">1</div>
+                        <div className="text-xs text-gray-500">LIA Hologram</div>
+                      </div>
+                      <div className="text-center p-3 border border-gray-800/50">
+                        <div className="mono text-xl text-neon font-bold">∞</div>
+                        <div className="text-xs text-gray-500">FOMO Generated</div>
                       </div>
                     </div>
                   </div>
-
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                   {/* The War Game */}
-                  <div className="lg:col-span-4 bg-black border border-gray-800/50 p-8 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-4 text-alert">
-                        <Radio size={20} className="animate-pulse" />
-                        <span className="mono font-bold">12:30 PM - ROUNDTABLE</span>
-                      </div>
-                      <h3 className="text-2xl font-bold mb-4">THE WAR GAME</h3>
-                      <p className="text-sm text-gray-400 mb-6">
-                        No panels. We hand out "Crisis Cards" (e.g., Pharma Excursion). 
-                        Let them fail with their current tools. Then show LIA solving it in seconds.
-                      </p>
+                  <div className="lg:col-span-6 bg-black border border-gray-800/50 p-8">
+                    <div className="flex items-center gap-2 mb-4 text-alert">
+                      <Radio size={20} className="animate-pulse" />
+                      <span className="mono font-bold">12:30 PM - ROUNDTABLE</span>
                     </div>
+                    <h3 className="text-2xl font-bold mb-4">THE WAR GAME</h3>
+                    <p className="text-sm text-gray-400 mb-6">
+                      No panels. We hand out "Crisis Cards" (e.g., Pharma Excursion). 
+                      Let them fail with their current tools. Then show LIA solving it in seconds.
+                    </p>
                     <div className="p-4 bg-black/50 border border-red-900/30 rounded">
                       <p className="mono text-xs text-red-400">"Your shipment is spoiling in Dubai. You are asleep. What now?"</p>
                     </div>
                   </div>
-
+                  
                   {/* Strategy Drafter */}
-                  <div className="lg:col-span-12">
-                    <StrategyDrafter />
+                  <div className="lg:col-span-6 bg-black border border-gray-800/50 p-8">
+                    <div className="mono text-xs text-gray-500 mb-4">OUTREACH AUTOMATION</div>
+                    <h3 className="text-2xl font-bold mb-4">Draft On-Site Pitches</h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Meet someone at the booth? Generate a personalized follow-up in seconds.
+                    </p>
+                    <a 
+                      href="#strategy-drafter" 
+                      onClick={(e) => { e.preventDefault(); document.querySelector('.strategy-drafter-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+                      className="inline-flex items-center gap-2 text-neon hover:text-white transition-colors text-sm"
+                    >
+                      Try the Strategy Drafter <ArrowRight size={14} />
+                    </a>
                   </div>
 
                   {/* The Dinners */}
-                  <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-black p-8 border border-gray-800/50 hover:border-neon/30 transition-colors">
                       <div className="flex justify-between items-start mb-4">
                         <h3 className="text-2xl font-bold text-white">NIGHT 1: THE HAFLA</h3>
@@ -1080,12 +1272,13 @@
               agencyPrice: '$24,500/mo',
               dudePrice: '$12,000/mo',
               savings: '$12,500/mo',
-              thesis: 'Manifest opens doors. We make sure they stay open. Continuous brand velocity and pipeline acceleration.',
+              thesis: 'Manifest opens doors. We make sure they stay open. Continuous brand velocity, pipeline acceleration, and media presence.',
               deliverables: [
                 { name: 'Content Engine', desc: 'Thought leadership, case studies, social presence' },
+                { name: 'PR & Media Outreach', desc: 'Press releases, journalist relationships, earned media placements' },
                 { name: 'Campaign Management', desc: 'Paid media, ABM programs, conference activations' },
-                { name: 'Brand Guardian', desc: 'Consistency audits, asset management, team training' },
                 { name: 'Strategic Advisory', desc: 'Monthly strategy sessions, market intelligence, opportunity mapping' },
+                { name: 'Network Activation', desc: 'Warm intros to our freight media + industry connections' },
                 { name: 'Performance Analytics', desc: 'Attribution reporting, ROI tracking, optimization recommendations' }
               ],
               outcome: 'Compounding returns. Each month builds on the last.',
@@ -1228,46 +1421,60 @@
           );
         };
 
-        // Competitive Landscape Component (Renamed Exhibit A)
+        // Competitive Landscape Component - Market Intel
         const CompetitiveLandscape = () => {
+          const competitors = [
+            { name: 'project44', position: 'Market leader narrative', weakness: 'Commodity perception' },
+            { name: 'FourKites', position: 'Enterprise focus', weakness: 'Innovation stagnation' },
+            { name: 'Tive', position: 'Hardware-first', weakness: 'Software secondary' },
+            { name: 'Overhaul', position: 'Security angle', weakness: 'Narrow positioning' }
+          ];
+          
           return (
             <section className="py-16 px-6 md:px-20 border-t border-gray-800/50">
               <div className="max-w-6xl mx-auto">
                 <div className="flex items-center gap-4 mb-8">
-                  <span className="mono text-xs text-neon tracking-wider">EXHIBIT A</span>
+                  <span className="mono text-xs text-neon tracking-wider">MARKET INTELLIGENCE</span>
                   <div className="flex-1 h-px bg-gray-800/50"></div>
                 </div>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                  <div>
-                    <h3 className="text-2xl font-bold text-white mb-4">The Competitive Landscape</h3>
-                    <p className="text-gray-400 mb-6 leading-relaxed">
-                      Market positioning analysis, competitor intelligence, and the strategic differentiation 
-                      framework that informs every creative decision.
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-1">
+                    <h3 className="text-2xl font-bold text-white mb-4">The Battlefield</h3>
+                    <p className="text-gray-400 mb-6 leading-relaxed text-sm">
+                      Visibility is a crowded space. Everyone claims AI. Everyone claims real-time. 
+                      <span className="text-white">Nobody owns "agentic."</span> That's the gap.
+                    </p>
+                    <p className="text-gray-500 text-sm mb-6">
+                      The Singularity narrative positions Sensos not as another visibility tool, 
+                      but as the <span className="text-neon">moment the old rules break down</span>.
                     </p>
                     <a 
                       href="https://docs.google.com/document/d/1hM_5M1ETsQI1q4W3MwNkTtPb_4i14_vnRqoQdrIFosU/edit"
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 mono text-sm text-neon hover:text-white transition-colors"
+                      className="inline-flex items-center gap-2 mono text-xs text-neon hover:text-white transition-colors"
                     >
-                      View Full Document <span>→</span>
+                      Full Analysis →
                     </a>
                   </div>
-                  <div className="bg-black border border-gray-800/50 p-6">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Visibility Players</span>
-                        <span className="text-white">Mapped & Analyzed</span>
+                  
+                  <div className="lg:col-span-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      {competitors.map((c, i) => (
+                        <div key={i} className="bg-black border border-gray-800/30 p-4 hover:border-gray-700 transition-colors">
+                          <div className="text-white font-medium mb-2">{c.name}</div>
+                          <div className="text-xs text-gray-500 mb-1">Position: <span className="text-gray-400">{c.position}</span></div>
+                          <div className="text-xs text-red-400/70">Gap: {c.weakness}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 p-4 bg-neon/5 border border-neon/20">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-neon rounded-full"></div>
+                        <span className="mono text-xs text-neon">SENSOS POSITIONING</span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Positioning Gaps</span>
-                        <span className="text-neon">Identified</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Singularity Narrative</span>
-                        <span className="text-white">Differentiated</span>
-                      </div>
+                      <p className="text-sm text-white mt-2">"We don't just see disruptions—we fix them before you wake up."</p>
                     </div>
                   </div>
                 </div>
@@ -1276,13 +1483,13 @@
           );
         };
 
-        // Social Proof Component - The DWTB?! Origin
+        // Social Proof Component - Why We're The Right Choice
         const SocialProof = () => {
-          const stats = [
-            { value: '50+', label: 'Livestream Episodes' },
-            { value: '30+', label: 'Startup CEOs Interviewed' },
-            { value: '$500K', label: 'Largest Campaign Sold' },
-            { value: '75', label: 'Years of Editorial Heritage' }
+          const capabilities = [
+            { category: 'CREATIVE', items: ['WebGL Development', 'Brand Systems', 'Motion Design', 'Interactive Demos'] },
+            { category: 'STRATEGY', items: ['GTM Planning', 'Messaging Architecture', 'Competitive Positioning', 'Event Activation'] },
+            { category: 'MEDIA', items: ['PR Outreach', 'Earned Placements', 'Podcast Network', 'Content Engine'] },
+            { category: 'NETWORK', items: ['C-Suite Intros', 'Investor Connections', 'Media Relationships', 'Industry Events'] }
           ];
           
           return (
@@ -1290,73 +1497,73 @@
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-neon/5 via-black to-black"></div>
               
               <div className="max-w-6xl mx-auto relative z-10">
-                <SectionHeader number="05" title="Why DWTB?!" subtitle="The Origin Story" />
+                <SectionHeader number="05" title="Why DWTB?!" subtitle="The Right Partner for This Moment" />
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                  {/* Story */}
+                  {/* The Case */}
                   <div>
-                    <p className="text-lg text-gray-300 mb-6 leading-relaxed">
-                      <span className="text-neon font-bold">Dude, What's The Bid?!</span> isn't just a name—it's a 
-                      LinkedIn livestream that became a movement. 50+ episodes deep, interviewing the founders 
-                      and operators actually building the future of freight.
+                    <p className="text-xl text-gray-300 mb-6 leading-relaxed">
+                      You're not hiring an agency. You're hiring a <span className="text-white font-bold">force multiplier</span>.
                     </p>
                     <p className="text-gray-400 mb-6 leading-relaxed">
-                      From product launches announced live on air, to C-suite appointments broken first on our show—
-                      we've become the place where freight tech comes to tell their story.
+                      50+ livestream episodes with freight tech founders. Product launches announced on our show. 
+                      C-suite appointments broken first through our network. We don't just understand the industry—
+                      <span className="text-neon">we're wired into it</span>.
                     </p>
                     <p className="text-gray-400 mb-8 leading-relaxed">
-                      The podcast led to advisory work. Advisory work revealed a gap: 
-                      <span className="text-white"> great tech doesn't sell itself</span>. 
-                      That gap is why DWTB?! evolved from media into a full strategic & creative firm.
+                      The podcast led to advisory work. Advisory led to creative. Now we do both—
+                      because we learned that <span className="text-white">great tech doesn't sell itself</span>.
                     </p>
                     
-                    <div className="p-4 bg-black border-l-2 border-neon">
-                      <p className="text-sm text-gray-400 italic">
-                        "There's a huge difference between having great tech and being able to market it."
-                      </p>
-                      <p className="mono text-xs text-neon mt-2">— The Thesis</p>
-                    </div>
-                    
-                    <div className="mt-6 p-4 bg-black border border-gray-800/50 hover:border-neon/30 transition-colors">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="mono text-xs text-green-400">MARKET SIGNAL</span>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-black border-l-2 border-neon">
+                        <div className="mono text-xs text-neon mb-2">THE THESIS</div>
+                        <p className="text-sm text-gray-300 italic">
+                          "There's a huge difference between having great tech and being able to market it."
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-300">
-                        <span className="text-white font-semibold">Trigent</span> has already approached us for the same engagement—
-                        including hosting their upcoming roundtable.
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2 italic">
-                        The playbook works. Others are noticing.
-                      </p>
+                      
+                      <div className="p-4 bg-black border border-gray-800/50 hover:border-green-500/30 transition-colors">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="mono text-xs text-green-400">MARKET SIGNAL</span>
+                        </div>
+                        <p className="text-sm text-gray-300">
+                          <span className="text-white font-semibold">Trigent</span> has approached us for the same engagement—
+                          including hosting their roundtable.
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">The playbook works. Others are noticing.</p>
+                      </div>
                     </div>
                   </div>
                   
-                  {/* Stats + Credibility */}
+                  {/* Capabilities Matrix */}
                   <div>
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                      {stats.map((stat, i) => (
-                        <div key={i} className="bg-black border border-gray-800/50 p-4 text-center hover:border-neon/30 transition-colors">
-                          <div className="text-3xl font-black text-neon mb-1">{stat.value}</div>
-                          <div className="mono text-xs text-gray-500 uppercase">{stat.label}</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {capabilities.map((cap, i) => (
+                        <div key={i} className="bg-black border border-gray-800/50 p-4 hover:border-neon/30 transition-colors">
+                          <div className="mono text-xs text-neon mb-3">{cap.category}</div>
+                          <div className="space-y-1.5">
+                            {cap.items.map((item, j) => (
+                              <div key={j} className="flex items-center gap-2 text-xs">
+                                <div className="w-1 h-1 bg-gray-600 rounded-full"></div>
+                                <span className="text-gray-400">{item}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
                     
-                    <div className="bg-black border border-gray-800/50 p-6">
-                      <div className="mono text-xs text-gray-500 mb-3">MEDIA DNA</div>
-                      <p className="text-sm text-gray-400 mb-4">
-                        Started in freight media at <span className="text-white">FreightWaves</span> when they acquired 
-                        <span className="text-white"> American Shipper</span>—a 75-year print editorial legacy. 
-                        Transitioned an entire book of business from print to digital. 
-                        Learned to sell vision, not just inventory.
-                      </p>
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        <span className="mono text-xs bg-neon/10 text-neon px-2 py-1 rounded border border-neon/20">Earned Media</span>
-                        <span className="mono text-xs bg-neon/10 text-neon px-2 py-1 rounded border border-neon/20">Paid Media</span>
-                        <span className="mono text-xs bg-neon/10 text-neon px-2 py-1 rounded border border-neon/20">GTM Strategy</span>
-                        <span className="mono text-xs bg-neon/10 text-neon px-2 py-1 rounded border border-neon/20">Brand Building</span>
+                    <div className="mt-4 p-4 bg-black border border-gray-800/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="mono text-xs text-gray-500">NETWORK DEPTH</span>
+                        <span className="mono text-xs text-neon">2 GENERATIONS</span>
                       </div>
+                      <p className="text-xs text-gray-400">
+                        FreightWaves alumni. American Shipper legacy. Podcast guests who became partners. 
+                        <span className="text-white">Doors that don't open for agencies.</span>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1367,52 +1574,105 @@
 
         // The Meta Component - When Marketing Becomes Product
         const TheMeta = () => {
+          const codeSnippet = `// This proposal is built with:
+const tech = {
+  framework: 'React 18',
+  styling: 'Tailwind CSS',
+  ai: 'Gemini 2.5 Flash',
+  pdf: 'jsPDF',
+  deploy: 'Vercel'
+};
+
+// Real-time signature capture
+const SignaturePad = () => {
+  const [hasInk, setHasInk] = useState(false);
+  // ... 200 lines of canvas magic
+};
+
+// AI-powered manifesto narration
+const playChunk = async (index) => {
+  const audio = await textToSpeech(chunk);
+  // Neural voice synthesis
+};`;
+          
           return (
             <section className="py-24 px-6 md:px-20 border-t border-gray-800/50 relative overflow-hidden">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neon/3 via-black to-black"></div>
               
-              <div className="max-w-4xl mx-auto relative z-10 text-center">
-                <div className="mono text-xs text-neon tracking-[0.3em] mb-4">RECURSIVE PROOF</div>
-                <h2 className="text-4xl md:text-5xl font-black text-white mb-8 leading-tight">
-                  This Proposal Is The Demo.
-                </h2>
-                
-                <div className="text-left bg-black border border-gray-800/50 p-8 mb-8">
-                  <p className="text-lg text-gray-300 mb-6 leading-relaxed">
-                    Look at what you're interacting with right now. A WebGL void that responds to your presence. 
-                    AI-powered manifesto narration. A signature workflow that generates legal-grade PDFs. 
-                    <span className="text-white">This isn't a pitch deck—it's a proof of concept.</span>
-                  </p>
-                  
-                  <p className="text-gray-400 mb-6 leading-relaxed">
-                    Open the Exhibit A addendum. See the pretty code highlighted alongside the strategic rationale. 
-                    Notice how the technical sophistication sits right next to the human storytelling. 
-                    <span className="text-neon">That's not an accident—that's the whole point.</span>
-                  </p>
-                  
-                  <p className="text-gray-400 mb-6 leading-relaxed">
-                    DWTB?! can build the demo that wins hearts and minds at the Monolith booth. 
-                    <span className="text-white">And</span> we can give you the marketing that sells the product. 
-                    Most shops do one or the other. We do both—because we understand they're 
-                    increasingly <span className="text-white">the same thing</span>.
+              <div className="max-w-6xl mx-auto relative z-10">
+                <div className="text-center mb-12">
+                  <div className="mono text-xs text-neon tracking-[0.3em] mb-4">RECURSIVE PROOF</div>
+                  <h2 className="text-4xl md:text-5xl font-black text-white mb-4 leading-tight">
+                    This Proposal Is The Demo.
+                  </h2>
+                  <p className="text-gray-400 max-w-2xl mx-auto">
+                    Everything you're experiencing right now—the interactions, the AI, the signature workflow—
+                    this is what we build for the booth.
                   </p>
                 </div>
                 
-                <div className="bg-black border-2 border-neon/50 p-8 shadow-[0_0_40px_rgba(0,255,194,0.1)]">
-                  <div className="mono text-xs text-neon tracking-[0.2em] mb-4">THE PROVOCATIVE QUESTION</div>
-                  <p className="text-xl md:text-2xl text-white font-light italic leading-relaxed mb-4">
-                    "If the sales pitch is so deeply embedded in a high-tech and psychological mechanism...
-                    when does the marketing stop being marketing, and actually start being a product itself?"
-                  </p>
-                  <p className="text-lg text-gray-400">
-                    And what does that mean for how you should approach B2B sales in the future?
-                  </p>
-                  
-                  <div className="mt-6 pt-6 border-t border-gray-800/50">
-                    <p className="text-sm text-neon">
-                      The answer is already in front of you.
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                  {/* The Argument */}
+                  <div className="bg-black border border-gray-800/50 p-8">
+                    <p className="text-lg text-gray-300 mb-6 leading-relaxed">
+                      Look at what you're interacting with. A void that responds to your presence. 
+                      AI-powered narration. Legal-grade PDF generation. 
+                      <span className="text-white">This isn't a pitch deck—it's proof of concept.</span>
                     </p>
+                    
+                    <p className="text-gray-400 mb-6 leading-relaxed">
+                      DWTB?! builds demos that win hearts and minds at the booth. 
+                      <span className="text-neon">And</span> we deliver the marketing that sells the product. 
+                      Most shops do one or the other. We do both.
+                    </p>
+                    
+                    <div className="p-4 bg-black border-l-2 border-neon">
+                      <div className="mono text-xs text-neon mb-2">THE PROVOCATIVE QUESTION</div>
+                      <p className="text-sm text-gray-300 italic leading-relaxed">
+                        "If the sales pitch is embedded in a high-tech psychological mechanism... 
+                        when does marketing stop being marketing and start being a product?"
+                      </p>
+                    </div>
                   </div>
+                  
+                  {/* The Code */}
+                  <div className="bg-black border border-gray-800/50 overflow-hidden">
+                    <div className="p-3 border-b border-gray-800/50 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      </div>
+                      <span className="mono text-xs text-gray-500">proposal.jsx</span>
+                    </div>
+                    <pre className="p-4 text-xs overflow-x-auto">
+                      <code className="text-gray-400">
+                        {codeSnippet.split('\n').map((line, i) => (
+                          <div key={i} className="flex">
+                            <span className="text-gray-600 w-6 flex-shrink-0 select-none">{i + 1}</span>
+                            <span className={line.includes('//') ? 'text-gray-500' : line.includes('const') || line.includes('async') ? 'text-purple-400' : line.includes("'") ? 'text-neon' : 'text-gray-300'}>
+                              {line}
+                            </span>
+                          </div>
+                        ))}
+                      </code>
+                    </pre>
+                  </div>
+                </div>
+                
+                {/* Disruption Simulator - The Live Demo */}
+                <div className="mb-8">
+                  <div className="text-center mb-6">
+                    <div className="mono text-xs text-gray-500 mb-2">TRY IT NOW</div>
+                    <p className="text-sm text-gray-400">This is what runs at the booth. Test LIA's brain.</p>
+                  </div>
+                  <DisruptionSimulator />
+                </div>
+                
+                <div className="text-center">
+                  <p className="text-sm text-neon">
+                    The answer to the question is already in front of you.
+                  </p>
                 </div>
               </div>
             </section>
@@ -1867,6 +2127,7 @@
               <Hero />
               <TheProblem />
               <Strategy />
+              <CompetitiveEdge />
               <ExecutionPlaybook />
               <CompetitiveLandscape />
               <SocialProof />
