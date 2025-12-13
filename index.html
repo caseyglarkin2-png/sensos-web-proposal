@@ -682,253 +682,207 @@
           );
         };
 
-        // Voice Engine Component
-        const VoiceEngine = () => {
-          const [isSpeaking, setIsSpeaking] = useState(false);
+        // Disruption Simulator Component
+        const DisruptionSimulator = () => {
+          const [input, setInput] = useState('');
+          const [output, setOutput] = useState('');
           const [loading, setLoading] = useState(false);
-          const [statusText, setStatusText] = useState("SYSTEM READY. WAITING FOR INPUT.");
-          
-          const activateVoice = async () => {
-            if (loading || isSpeaking) return;
-            
-            // Check for API key first
-            const apiKey = getApiKey();
-            if (!apiKey) {
-              setStatusText("API KEY REQUIRED. CLICK SHIELD ICON BELOW.");
-              return;
-            }
-            
-            setLoading(true);
-            setStatusText("ANALYZING NETWORK FOR ANOMALIES...");
 
+          const simulate = async () => {
+            if (!input.trim()) return;
+            setLoading(true);
+            setOutput('');
+            
+            const systemPrompt = `You are LIA, the Sensos Singularity AI. You are a cold, precise, and hyper-intelligent supply chain "Central Brain". 
+            The user will provide a supply chain disruption event.
+            You must output a response in exactly three sections, formatted precisely like this:
+
+            [PREDICT]
+            (Explain what downstream impacts will happen in the next 24-48 hours. Be specific.)
+
+            [PRIORITIZE]
+            (Assign a Risk Level: LOW / MEDIUM / CRITICAL. Explain why this matters or if it is just noise.)
+
+            [EXECUTE]
+            (Describe the automated correction LIA performs: e.g., re-booking freight, alerting specific teams, triggering insurance clauses.)
+
+            Tone: Futuristic, minimal, authoritative.`;
+            
             try {
-              // 1. Generate a Crisis Scenario Script
-              const script = await generateText("Generate a very short, urgent, 2-sentence executive summary of a critical supply chain disruption (e.g. 'Temperature excursion detected in Dubai, shipment 404'). Use military/AI jargon. End with 'Rerouting Initiated.'");
-              
-              if (script && script !== "System Error." && script !== "Connection Lost." && script !== "MISSING_KEY") {
-                setStatusText(script.toUpperCase());
-                
-                // 2. Generate Audio
-                const audioData = await generateSpeech(script);
-                
-                if (audioData) {
-                  setLoading(false);
-                  setIsSpeaking(true);
-                  const wavBlob = base64ToWav(audioData);
-                  const audioUrl = URL.createObjectURL(wavBlob);
-                  const audio = new Audio(audioUrl);
-                  
-                  audio.onerror = () => {
-                    setIsSpeaking(false);
-                    setStatusText("AUDIO PLAYBACK ERROR.");
-                  };
-                  
-                  audio.onended = () => {
-                    setIsSpeaking(false);
-                    setStatusText("TRANSMISSION COMPLETE.");
-                  };
-                  
-                  audio.play().catch(() => {
-                    setIsSpeaking(false);
-                    setLoading(false);
-                    setStatusText("BROWSER BLOCKED AUDIO. CLICK TO RETRY.");
-                  });
-                } else {
-                  setLoading(false);
-                  setStatusText("AUDIO SYNTHESIS FAILED. CHECK API KEY.");
+              const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${getApiKey()}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{ parts: [{ text: input }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                  })
                 }
-              } else {
-                setLoading(false);
-                setStatusText(script === "MISSING_KEY" ? "API KEY REQUIRED." : "DATA STREAM INTERRUPTED.");
-              }
-            } catch (err) {
-              console.error('VoiceEngine error:', err);
-              setLoading(false);
-              setStatusText("SYSTEM ERROR. CHECK CONSOLE.");
+              );
+              const data = await response.json();
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'SYSTEM ERROR: NO RESPONSE';
+              setOutput(text);
+            } catch (e) {
+              setOutput('CONNECTION FAILED. RETRY SEQUENCE INITIATED...');
             }
+            setLoading(false);
+          };
+
+          const formatOutput = (text) => {
+            return text
+              .replace(/\[PREDICT\]/g, '<div class="text-neon font-bold mt-4 mb-2">>> PREDICT_MODULE_LOADED</div>')
+              .replace(/\[PRIORITIZE\]/g, '<div class="text-neon font-bold mt-4 mb-2">>> PRIORITY_CALCULATION</div>')
+              .replace(/\[EXECUTE\]/g, '<div class="text-red-500 font-bold mt-4 mb-2">>> EXECUTION_PROTOCOL</div>');
           };
 
           return (
-            <div className="mt-12 p-8 bg-black border border-gray-800 rounded-xl relative overflow-hidden group hover:border-neon transition-colors">
-              <div className="absolute top-0 right-0 p-3 bg-gray-900 border-l border-b border-gray-800">
-                <span className="mono text-xs text-neon flex items-center gap-2">
-                  <Brain size={12} /> BRAIN VOICE ENGINE v2.0
-                </span>
+            <div className="mt-12 bg-black border border-gray-800 rounded-xl overflow-hidden">
+              <div className="p-4 bg-gray-900/50 border-b border-gray-800 flex justify-between items-center">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <ShieldAlert size={18} className="text-neon" />
+                  DISRUPTION SIMULATOR
+                </h3>
+                <span className="mono text-xs text-gray-500">LIA NEURAL ENGINE</span>
               </div>
               
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2">LIA DOESN'T JUST TEXT. <br/><span className="text-neon">SHE SPEAKS.</span></h3>
-                  <p className="text-gray-400 text-sm mb-6">
-                    Executives don't read dashboards. They listen to briefings. 
-                    The <strong className="text-white">Brain Voice Engine</strong> synthesizes complex logistics data into 
-                    executive summaries instantly.
+              <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-800">
+                {/* Input */}
+                <div className="p-6">
+                  <p className="text-gray-400 text-sm mb-4">
+                    Enter a supply chain disruption. LIA will <span className="text-neon">Predict</span> impacts, 
+                    <span className="text-neon"> Prioritize</span> response, and <span className="text-red-400">Execute</span> corrections.
                   </p>
-                  <button 
-                    onClick={activateVoice}
-                    disabled={loading || isSpeaking}
-                    className={`flex items-center gap-3 px-6 py-3 rounded font-bold mono uppercase transition-all ${isSpeaking ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-800 text-white hover:bg-neon hover:text-black'}`}
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="e.g. Port of Rotterdam closed due to storm, 3 containers stuck with perishable pharma goods..."
+                    className="w-full h-32 bg-gray-950 border border-gray-700 p-3 text-white text-sm focus:border-neon outline-none resize-none"
+                  />
+                  <button
+                    onClick={simulate}
+                    disabled={loading || !input.trim()}
+                    className="mt-4 w-full py-3 bg-neon text-black font-bold uppercase flex items-center justify-center gap-2 hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed mobile-touch-target"
                   >
-                    {loading ? <><Loader size={18} className="animate-spin" /> Synthesizing...</> : 
-                     isSpeaking ? <><Activity size={18} /> Transmitting...</> : 
-                     <><Sparkles size={18} /> Initialize Voice Protocol ✨</>}
+                    {loading ? <><Loader size={18} className="animate-spin" /> ANALYZING...</> : <><Zap size={18} /> RUN SIMULATION</>}
                   </button>
                 </div>
-
-                <div className="w-full md:w-64 h-24 bg-gray-900 rounded flex items-center justify-center gap-1 px-4 overflow-hidden border border-gray-700">
-                  {[...Array(20)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`w-2 bg-neon rounded-full bar ${isSpeaking ? '' : 'h-1 opacity-20'}`}
-                      style={{
-                        height: isSpeaking ? `${Math.random() * 100}%` : '4px',
-                        animationDuration: `${Math.random() * 400 + 100}ms`,
-                        animationPlayState: isSpeaking ? 'running' : 'paused'
-                      }}
-                    ></div>
-                  ))}
+                
+                {/* Output */}
+                <div className="p-6 bg-gray-950/50">
+                  <div className="mono text-xs text-gray-500 mb-2">// LIA RESPONSE</div>
+                  {loading ? (
+                    <div className="text-neon animate-pulse">LIA IS ANALYZING GLOBAL NODES...</div>
+                  ) : output ? (
+                    <div className="text-sm text-gray-300 leading-relaxed mono" dangerouslySetInnerHTML={{ __html: formatOutput(output) }} />
+                  ) : (
+                    <div className="text-gray-600 text-sm">Awaiting disruption input...</div>
+                  )}
                 </div>
-              </div>
-              
-              <div className="absolute bottom-4 left-8 mono text-xs text-neon max-w-2xl truncate">
-                {statusText}
               </div>
             </div>
           );
         };
 
-        // Meme Generator Component
-        const MemeGenerator = () => {
-          const [scenario, setScenario] = useState("");
-          const [textTop, setTextTop] = useState("WHEN THE BROKER SAYS");
-          const [textBottom, setTextBottom] = useState("IT'S 'JUST AROUND THE CORNER'");
-          const [bgImage, setBgImage] = useState(null);
+        // Strategy Drafter Component
+        const StrategyDrafter = () => {
+          const [stakeholder, setStakeholder] = useState('');
+          const [output, setOutput] = useState('');
           const [loading, setLoading] = useState(false);
 
-          const generateMeme = async () => {
-            if (!scenario) return;
+          const draft = async () => {
+            if (!stakeholder.trim()) return;
             setLoading(true);
+            setOutput('');
             
-            // 1. Generate Text - UPDATED PROMPT FOR SHORTER TEXT (AGAIN)
-            // Reduce max words to 5 to force brevity.
-            const prompt = `Write a super short, punchy meme caption (Top Text and Bottom Text, MAX 5 WORDS EACH) for this supply chain scenario: '${scenario}'. Return ONLY valid JSON in this format: { "top": "TEXT", "bottom": "TEXT" }`;
-            const textResult = await generateText(prompt);
+            const systemPrompt = `You are a strategic communications AI for Sensos. 
+            The user is targeting a specific stakeholder for the "Manifest 2026" event activation.
+            Draft a short, punchy, high-impact cold email to this person.
             
-            // Parse JSON safely
+            Context:
+            - Event: Manifest 2026 in Las Vegas.
+            - Brand Tone: "The Singularity" (Bold, futuristic, decisive).
+            - Key Offerings: "The Monolith" booth, "12:30 Anomaly" war game, "Tale of Two Cities" dinner.
+            - Value Prop: Stop viewing data, start executing actions.
+            
+            Keep it under 150 words. Sign off as "The Sensos Team".`;
+            
             try {
-              // Clean up markdown block if present
-              const cleanedJson = textResult.replace(/```json/g, '').replace(/```/g, '');
-              const parsed = JSON.parse(cleanedJson);
-              setTextTop(parsed.top?.toUpperCase() || "ERROR");
-              setTextBottom(parsed.bottom?.toUpperCase() || "RETRY");
+              const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${getApiKey()}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{ parts: [{ text: `Target Stakeholder: ${stakeholder}` }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                  })
+                }
+              );
+              const data = await response.json();
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'SYSTEM ERROR: NO RESPONSE';
+              setOutput(text);
             } catch (e) {
-              console.log("JSON Parse Error", e);
-              setTextTop("SYSTEM");
-              setTextBottom("OVERLOAD");
+              setOutput('CONNECTION FAILED. RETRY SEQUENCE INITIATED...');
             }
-
-            // 2. Generate Image
-            const imgUrl = await generateImage(scenario);
-            if (imgUrl) setBgImage(imgUrl);
-            
             setLoading(false);
           };
 
+          const copyToClipboard = () => {
+            navigator.clipboard.writeText(output);
+            window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Copied to clipboard!' } }));
+          };
+
           return (
-            <div className="mt-16 bg-zinc-900 border border-gray-700 p-1">
-              <div className="bg-black p-6 border-b border-gray-800 flex justify-between items-center">
-                <h3 className="font-bold text-xl uppercase flex items-center gap-2">
-                  <ImageIcon size={20} className="text-neon" /> 
-                  The Culture Weapon
+            <div className="mt-8 bg-black border border-gray-800 rounded-xl overflow-hidden">
+              <div className="p-4 bg-gray-900/50 border-b border-gray-800 flex justify-between items-center">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <Terminal size={18} className="text-neon" />
+                  STRATEGY DRAFTER
                 </h3>
-                <span className="mono text-xs text-gray-500">POWERED BY GEMINI + IMAGEN 3</span>
+                <span className="mono text-xs text-gray-500">MANIFEST 2026 OUTREACH</span>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2">
-                {/* Controls */}
-                <div className="p-8 border-r border-gray-800">
-                  <p className="text-gray-400 text-sm mb-6">
-                    We don't just win on tech. We win on <span className="text-white">narrative</span>. 
-                    Enter a scenario, and the AI generates the content to dominate the feed.
+              <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-800">
+                {/* Input */}
+                <div className="p-6">
+                  <p className="text-gray-400 text-sm mb-4">
+                    Enter a target stakeholder for Manifest 2026. LIA will generate a 
+                    <span className="text-neon"> high-impact cold email</span> tailored to their role.
                   </p>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mono text-xs text-gray-500 block mb-1">TACTICAL SITUATION (SCENARIO)</label>
-                      <input 
-                        type="text" 
-                        value={scenario}
-                        onChange={(e) => setScenario(e.target.value)}
-                        placeholder="e.g. Driver is late, Customs hold, Cheap broker"
-                        className="w-full bg-gray-900 border border-gray-700 p-3 text-white font-bold focus:border-neon outline-none" 
-                      />
-                    </div>
-                    
-                    <div className="pt-4 border-t border-gray-800 mt-4 opacity-50 pointer-events-none">
-                        <div className="mb-2">
-                            <label className="mono text-xs text-gray-500 block mb-1">GENERATED TOP TEXT</label>
-                            <div className="w-full bg-gray-900 p-2 text-xs text-gray-400">{textTop}</div>
-                        </div>
-                        <div>
-                            <label className="mono text-xs text-gray-500 block mb-1">GENERATED BOTTOM TEXT</label>
-                            <div className="w-full bg-gray-900 p-2 text-xs text-gray-400">{textBottom}</div>
-                        </div>
-                    </div>
-
-                    <button 
-                        onClick={generateMeme}
-                        disabled={loading || !scenario}
-                        className="mt-8 w-full bg-neon text-black font-bold py-3 flex items-center justify-center gap-2 hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? <Loader className="animate-spin" size={18}/> : <Sparkles size={18} />} 
-                        {loading ? "GENERATING ASSETS..." : "DEPLOY CONTENT WEAPON ✨"}
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    value={stakeholder}
+                    onChange={(e) => setStakeholder(e.target.value)}
+                    placeholder="e.g. VP of Supply Chain at Pfizer, Logistics Director at Nike..."
+                    className="w-full bg-gray-950 border border-gray-700 p-3 text-white text-sm focus:border-neon outline-none"
+                  />
+                  <button
+                    onClick={draft}
+                    disabled={loading || !stakeholder.trim()}
+                    className="mt-4 w-full py-3 bg-neon text-black font-bold uppercase flex items-center justify-center gap-2 hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed mobile-touch-target"
+                  >
+                    {loading ? <><Loader size={18} className="animate-spin" /> GENERATING...</> : <><Sparkles size={18} /> DRAFT PITCH</>}
+                  </button>
                 </div>
-
-                {/* Preview */}
-                <div className="p-8 flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-                  {/* MEME CONTAINER */}
-                  <div className="w-full aspect-square relative flex flex-col justify-between overflow-hidden bg-gray-900 border-4 border-white shadow-2xl">
-                    
-                    {/* Background Image Layer */}
-                    <div className="absolute inset-0 z-0">
-                        {bgImage ? (
-                            <img src={bgImage} alt="AI Generated Background" className="w-full h-full object-cover opacity-80" />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-red-900 to-black opacity-50"></div>
-                        )}
-                    </div>
-                    
-                    {/* Gradient Overlays for Readability */}
-                    <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none"></div>
-                    <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black/80 to-transparent z-10 pointer-events-none"></div>
-
-                    {/* Content Layer */}
-                    <div className="relative z-20 w-full h-full flex flex-col justify-between p-6">
-                        
-                        <h2 className="text-2xl md:text-3xl font-black text-white uppercase font-impact text-center leading-none tracking-wide break-words drop-shadow-xl" 
-                            style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000' }}>
-                          {textTop}
-                        </h2>
-                        
-                        {/* Center Icon only if no image */}
-                        {!bgImage && (
-                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-50">
-                                <div className="w-24 h-24 bg-black rounded-full border-4 border-neon flex items-center justify-center">
-                                    <Zap size={48} className="text-neon" />
-                                </div>
-                             </div>
-                        )}
-
-                        <h2 className="text-2xl md:text-3xl font-black text-white uppercase font-impact text-center leading-none tracking-wide break-words drop-shadow-xl" 
-                            style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000' }}>
-                          {textBottom}
-                        </h2>
-                        
-                        <div className="absolute bottom-2 right-2 mono text-[10px] text-white/50 z-30 font-sans tracking-normal font-normal">GENERATED BY SENSOS</div>
-                    </div>
+                
+                {/* Output */}
+                <div className="p-6 bg-gray-950/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="mono text-xs text-gray-500">// GENERATED EMAIL</div>
+                    {output && (
+                      <button onClick={copyToClipboard} className="text-xs text-neon hover:text-white flex items-center gap-1">
+                        <Download size={12} /> Copy
+                      </button>
+                    )}
                   </div>
+                  {loading ? (
+                    <div className="text-white animate-pulse">GENERATING NEURAL PITCH...</div>
+                  ) : output ? (
+                    <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{output}</div>
+                  ) : (
+                    <div className="text-gray-600 text-sm">Enter a stakeholder to generate outreach...</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -981,7 +935,7 @@
                   ))}
                 </div>
 
-                <VoiceEngine />
+                <DisruptionSimulator />
 
               </div>
             </section>
@@ -1035,9 +989,9 @@
                     </div>
                   </div>
 
-                  {/* Meme Generator */}
+                  {/* Strategy Drafter */}
                   <div className="lg:col-span-12">
-                    <MemeGenerator />
+                    <StrategyDrafter />
                   </div>
 
                   {/* The Dinners */}
