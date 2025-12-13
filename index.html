@@ -1312,8 +1312,10 @@
           const [audioCache, setAudioCache] = useState({});
           const [isLoading, setIsLoading] = useState(false);
           const [isPlaying, setIsPlaying] = useState(false);
+          const [skipAudio, setSkipAudio] = useState(false);
           const itemRefs = useRef([]);
           const audioRef = useRef(new Audio());
+          const advanceTimerRef = useRef(null);
 
           const manifestoChunks = [
             "The supply chain isn't broken. It's obsolete.",
@@ -1339,57 +1341,99 @@
             if (index >= manifestoChunks.length) return null;
             if (audioCache[index]) return audioCache[index];
             const text = manifestoChunks[index];
-            const b64 = await generateSpeech(text);
-            if (!b64) return null;
-            const wav = base64ToWav(b64);
-            const url = URL.createObjectURL(wav);
-            setAudioCache(prev => ({ ...prev, [index]: url }));
-            return url;
+            try {
+              const b64 = await generateSpeech(text);
+              if (!b64) return null;
+              const wav = base64ToWav(b64);
+              const url = URL.createObjectURL(wav);
+              setAudioCache(prev => ({ ...prev, [index]: url }));
+              return url;
+            } catch (e) {
+              console.error('TTS error:', e);
+              return null;
+            }
           };
 
           const playChunk = async (index) => {
+            // Clear any pending advance timer
+            if (advanceTimerRef.current) {
+              clearTimeout(advanceTimerRef.current);
+              advanceTimerRef.current = null;
+            }
+            
             if (index >= manifestoChunks.length) {
               setIsPlaying(false);
+              setIsLoading(false);
               notifyEvent('manifesto_complete');
               return;
             }
+            
             setActiveIndex(index);
             notifyEvent('manifesto_chunk_play', { index });
+            
             if (itemRefs.current[index]) {
               itemRefs.current[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
+            
+            // If skipping audio, just advance after delay
+            if (skipAudio) {
+              advanceTimerRef.current = setTimeout(() => playChunk(index + 1), 3000);
+              return;
+            }
+            
+            // Try to get and play audio
+            setIsLoading(true);
             let audioUrl = audioCache[index];
             if (!audioUrl) {
-              setIsLoading(true);
               audioUrl = await getAudioForChunk(index);
-              setIsLoading(false);
-            }
-            if (audioUrl) {
-              audioRef.current.src = audioUrl;
-              audioRef.current.play();
+              // Pre-fetch next chunk
               getAudioForChunk(index + 1);
-              audioRef.current.onended = () => {
-                notifyEvent('manifesto_chunk_end', { index });
-                playChunk(index + 1);
-              };
+            }
+            setIsLoading(false);
+            
+            if (audioUrl) {
+              try {
+                audioRef.current.src = audioUrl;
+                audioRef.current.onerror = () => {
+                  console.warn('Audio playback error, advancing...');
+                  advanceTimerRef.current = setTimeout(() => playChunk(index + 1), 3000);
+                };
+                audioRef.current.onended = () => {
+                  notifyEvent('manifesto_chunk_end', { index });
+                  playChunk(index + 1);
+                };
+                await audioRef.current.play();
+              } catch (e) {
+                console.warn('Play failed:', e);
+                // Autoplay blocked or other error - advance anyway
+                advanceTimerRef.current = setTimeout(() => playChunk(index + 1), 3000);
+              }
             } else {
-              window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Audio generation failed. Advancing…' } }));
-              setTimeout(() => playChunk(index + 1), 2000);
+              // No audio available, advance after reading time
+              advanceTimerRef.current = setTimeout(() => playChunk(index + 1), 3000);
             }
           };
 
           const startExperience = () => {
             setIsPlaying(true);
+            setActiveIndex(-1);
             notifyEvent('manifesto_start');
             playChunk(0);
           };
 
           const stopExperience = () => {
+            if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
             audioRef.current.pause();
             setIsPlaying(false);
             setOpen(false);
             notifyEvent('manifesto_terminated');
             window.dispatchEvent(new CustomEvent('manifesto-closed-scroll'));
+          };
+          
+          const manualAdvance = () => {
+            if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+            audioRef.current.pause();
+            playChunk(activeIndex + 1);
           };
 
           if (!open) return null;
@@ -1399,8 +1443,16 @@
                 <div className="flex items-center gap-3">
                   <div className={`w-3 h-3 rounded-full ${isPlaying ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`}></div>
                   <span className="mono text-neon text-sm">LIA // MANIFESTO PROTOCOL</span>
+                  {isLoading && <span className="mono text-xs text-yellow-400 animate-pulse">Loading audio...</span>}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                    <input type="checkbox" checked={skipAudio} onChange={(e) => setSkipAudio(e.target.checked)} className="accent-neon" />
+                    <span>Skip Audio</span>
+                  </label>
+                  {activeIndex >= 0 && activeIndex < manifestoChunks.length - 1 && (
+                    <button onClick={manualAdvance} className="px-3 py-1 bg-gray-800 text-white text-xs rounded hover:bg-gray-700">Next →</button>
+                  )}
                   {activeIndex === -1 ? (
                     <button onClick={startExperience} className="px-3 py-1 bg-neon text-black font-bold text-xs">INITIATE</button>
                   ) : (
