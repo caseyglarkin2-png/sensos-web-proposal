@@ -16,7 +16,6 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
     <div id="root" class="bg-black min-h-screen text-white flex items-center justify-center">
@@ -105,17 +104,6 @@
             return EMBEDDED_API_KEY;
         }
 
-        // --- EMAILJS INITIALIZATION ---
-        // Public key for Sensos proposal (read-only, can only send to configured templates)
-        const EMAILJS_PUBLIC_KEY = 'YOUR_EMAILJS_PUBLIC_KEY'; // Replace after setup
-        const EMAILJS_SERVICE_ID = 'service_sensos';
-        const EMAILJS_TEMPLATE_ID = 'template_sow_signed';
-        
-        // Initialize EmailJS (will use fallback if not configured)
-        if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY') {
-          emailjs.init(EMAILJS_PUBLIC_KEY);
-        }
-
         // --- DOCUMENT INTEGRITY ---
         // Hash of the official SOW document to verify it wasn't altered
         const SOW_DOC_ID = '1xruZfOiLhtGaJRXBsfyowWob0Hn808oy';
@@ -130,58 +118,121 @@
           return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // Send signed agreement via email (to both Casey and signer)
+        // Send signed agreement via email using FormSubmit.co (no setup required!)
         async function sendSignedAgreement({ name, email, title, company, signedAt, signatureDataUrl, pdfBase64 }) {
           const integrityHash = await hashString(`${SOW_DOC_ID}|${SOW_VERSION}|${name}|${email}|${signedAt}`);
+          const sowUrl = `https://docs.google.com/document/d/${SOW_DOC_ID}`;
           
-          // Always send via webhook (Zapier can forward to email)
-          const webhookPayload = {
-            event: 'sow_signed_full',
-            signer: { name, email, title, company },
-            signedAt,
-            sowDocId: SOW_DOC_ID,
-            sowVersion: SOW_VERSION,
-            integrityHash,
-            signaturePreview: signatureDataUrl.substring(0, 100) + '...', // Preview only
-            pdfBase64: pdfBase64, // Full PDF for attachment
-          };
-          
+          // Email content for Casey
+          const caseyEmailBody = `
+🖊️ NEW SOW SIGNATURE RECEIVED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SIGNATORY INFORMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Name: ${name}
+Email: ${email}
+Title: ${title || 'Not provided'}
+Company: ${company || 'Not provided'}
+Signed At: ${signedAt}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DOCUMENT VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SOW Version: ${SOW_VERSION}
+SOW Document: ${sowUrl}
+Integrity Hash: ${integrityHash}
+
+This hash cryptographically proves the signer 
+agreed to the unaltered original SOW document.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Signed via Sensos Proposal Portal
+          `.trim();
+
+          // Email content for signer
+          const signerEmailBody = `
+Hi ${name},
+
+Thank you for signing the Sensos x Manifest 2026 Statement of Work!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR AGREEMENT CONFIRMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Signed At: ${signedAt}
+SOW Document: ${sowUrl}
+
+VERIFICATION
+Integrity Hash: ${integrityHash}
+(This hash proves you agreed to the unaltered original document)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Casey will be in touch shortly to kick things off.
+We're excited to build the future of Sensos together!
+
+— The DWTB?! Team
+          `.trim();
+
+          // Send to Casey via FormSubmit.co (free, no signup needed)
           try {
-            const webhookUrl = getNotifyUrl();
-            await fetch(webhookUrl, {
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('email', email);
+            formData.append('_subject', `🖊️ SOW Signed: ${name}${company ? ` (${company})` : ''}`);
+            formData.append('message', caseyEmailBody);
+            formData.append('_captcha', 'false');
+            formData.append('_template', 'table');
+            
+            await fetch('https://formsubmit.co/ajax/caseyglarkin2@gmail.com', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(webhookPayload),
-              keepalive: true,
+              body: formData,
             });
+            console.log('Email sent to Casey');
           } catch (e) {
-            console.warn('Webhook delivery failed:', e);
+            console.warn('FormSubmit to Casey failed:', e);
           }
 
-          // Also try EmailJS if configured
-          if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY') {
-            try {
-              await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                to_name: 'Casey Larkin',
-                to_email: 'caseyglarkin2@gmail.com',
-                signer_name: name,
-                signer_email: email,
-                signer_title: title || 'N/A',
-                signer_company: company || 'N/A',
-                signed_at: signedAt,
-                integrity_hash: integrityHash,
-                sow_version: SOW_VERSION,
+          // Send confirmation to signer
+          try {
+            const signerFormData = new FormData();
+            signerFormData.append('name', 'Sensos Team');
+            signerFormData.append('email', 'noreply@sensos.com');
+            signerFormData.append('_subject', '✅ Your Sensos Agreement - Signed & Confirmed');
+            signerFormData.append('message', signerEmailBody);
+            signerFormData.append('_captcha', 'false');
+            signerFormData.append('_template', 'table');
+            signerFormData.append('_replyto', 'caseyglarkin2@gmail.com');
+            
+            await fetch(`https://formsubmit.co/ajax/${email}`, {
+              method: 'POST',
+              body: signerFormData,
+            });
+            console.log('Confirmation sent to signer');
+          } catch (e) {
+            console.warn('FormSubmit to signer failed:', e);
+          }
+
+          // Also send to webhook for logging/backup
+          try {
+            const webhookUrl = getNotifyUrl();
+            if (webhookUrl && !webhookUrl.includes('postman-echo')) {
+              await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  event: 'sow_signed_full',
+                  signer: { name, email, title, company },
+                  signedAt,
+                  sowDocId: SOW_DOC_ID,
+                  sowVersion: SOW_VERSION,
+                  integrityHash,
+                }),
+                keepalive: true,
               });
-              // Send copy to signer
-              await emailjs.send(EMAILJS_SERVICE_ID, 'template_sow_confirmation', {
-                to_name: name,
-                to_email: email,
-                signed_at: signedAt,
-                integrity_hash: integrityHash,
-              });
-            } catch (e) {
-              console.warn('EmailJS delivery failed:', e);
             }
+          } catch (e) {
+            console.warn('Webhook delivery failed:', e);
           }
           
           return { integrityHash, success: true };
