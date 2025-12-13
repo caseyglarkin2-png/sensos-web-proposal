@@ -507,6 +507,48 @@
           );
         };
 
+        // Floating Podcast Player - Listen while you scroll
+        const FloatingPodcast = () => {
+          const [expanded, setExpanded] = useState(false);
+          const [dismissed, setDismissed] = useState(false);
+          const fileId = '1MxHxOc8p0LAhKrHzmCojH-bhNFN_HmRv';
+          const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+          
+          if (dismissed) return null;
+          
+          return (
+            <div className="fixed top-20 right-4 z-50 transition-all duration-300">
+              <div className={`bg-black border border-neon rounded-lg shadow-[0_0_30px_rgba(0,255,194,0.2)] overflow-hidden transition-all duration-300 ${expanded ? 'w-80' : 'w-auto'}`}>
+                {expanded ? (
+                  <div>
+                    <div className="p-3 border-b border-gray-800 flex items-center justify-between">
+                      <div>
+                        <div className="text-white font-bold text-sm">🎧 The Impetus</div>
+                        <div className="text-xs text-gray-400">Listen while you scroll</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setExpanded(false)} className="text-gray-400 hover:text-white text-sm">−</button>
+                        <button onClick={() => setDismissed(true)} className="text-gray-400 hover:text-white text-sm">×</button>
+                      </div>
+                    </div>
+                    <div className="h-16">
+                      <iframe title="Podcast" src={previewUrl} allow="autoplay" className="w-full h-full" />
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setExpanded(true)} className="p-3 flex items-center gap-3 hover:bg-gray-900/50 transition-colors">
+                    <span className="text-2xl">🎧</span>
+                    <div className="text-left">
+                      <div className="text-white text-sm font-medium">Listen while you scroll</div>
+                      <div className="text-neon text-xs">Play The Impetus →</div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        };
+
         // Manifesto Podcast Component (Google Drive preview)
         const ManifestoPodcast = () => {
           const fileId = '1MxHxOc8p0LAhKrHzmCojH-bhNFN_HmRv';
@@ -811,7 +853,7 @@
             setLoading(true);
             setOutput('');
 
-            const selectedAssetNames = assets.filter(a => selectedAssets.includes(a.id)).map(a => `${a.name}: ${a.desc}`).join('\\n- ');
+            const selectedAssetNames = assets.filter(a => selectedAssets.includes(a.id)).map(a => `${a.name}: ${a.desc}`).join('\n- ');
 
             const systemPrompt = `You are a sales outreach specialist for Sensos, a supply chain AI company attending Manifest 2026 in Las Vegas (Feb 10-12).
 
@@ -2258,6 +2300,7 @@ const playChunk = async (index) => {
               <style>{styles}</style>
               <div className="scanline"></div>
               <ApiKeyModal />
+              <FloatingPodcast />
               <Hero />
               <TheProblem />
               <Strategy />
@@ -2707,8 +2750,18 @@ const playChunk = async (index) => {
                           <span className="w-6 h-6 rounded-full bg-neon text-black text-xs font-bold flex items-center justify-center">2</span>
                           <span className="mono text-xs text-gray-400">YOUR SIGNATURE</span>
                         </div>
-                        <canvas ref={canvasRef} width={640} height={160} className="w-full bg-black/30 border border-gray-700 rounded cursor-crosshair" aria-label="Sign here"></canvas>
-                        <button onClick={clearSig} className="mt-1 text-xs text-gray-500 hover:text-neon transition-colors">Clear signature</button>
+                        <div className="relative">
+                          <canvas ref={canvasRef} width={640} height={200} className={`w-full bg-black border-2 rounded-lg cursor-crosshair transition-all ${hasInk ? 'border-neon shadow-[0_0_20px_rgba(0,255,194,0.3)]' : 'border-gray-600 border-dashed'}`} aria-label="Sign here"></canvas>
+                          {!hasInk && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <span className="text-gray-600 text-sm">✍️ Draw your signature here</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <button onClick={clearSig} className="text-xs text-gray-500 hover:text-neon transition-colors">Clear</button>
+                          <span className="text-xs text-gray-600">Use mouse or finger to sign</span>
+                        </div>
                       </div>
                       
                       {/* Step 3: Confirm */}
