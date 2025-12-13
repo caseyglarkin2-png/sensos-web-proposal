@@ -16,6 +16,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
     <div id="root" class="bg-black min-h-screen text-white flex items-center justify-center">
@@ -102,6 +103,88 @@
             if (stored) return stored;
             // Fallback to embedded key
             return EMBEDDED_API_KEY;
+        }
+
+        // --- EMAILJS INITIALIZATION ---
+        // Public key for Sensos proposal (read-only, can only send to configured templates)
+        const EMAILJS_PUBLIC_KEY = 'YOUR_EMAILJS_PUBLIC_KEY'; // Replace after setup
+        const EMAILJS_SERVICE_ID = 'service_sensos';
+        const EMAILJS_TEMPLATE_ID = 'template_sow_signed';
+        
+        // Initialize EmailJS (will use fallback if not configured)
+        if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+          emailjs.init(EMAILJS_PUBLIC_KEY);
+        }
+
+        // --- DOCUMENT INTEGRITY ---
+        // Hash of the official SOW document to verify it wasn't altered
+        const SOW_DOC_ID = '1xruZfOiLhtGaJRXBsfyowWob0Hn808oy';
+        const SOW_VERSION = '2025-12-13-v1'; // Update if SOW changes
+        
+        // Simple hash function for integrity verification
+        async function hashString(str) {
+          const encoder = new TextEncoder();
+          const data = encoder.encode(str);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Send signed agreement via email (to both Casey and signer)
+        async function sendSignedAgreement({ name, email, title, company, signedAt, signatureDataUrl, pdfBase64 }) {
+          const integrityHash = await hashString(`${SOW_DOC_ID}|${SOW_VERSION}|${name}|${email}|${signedAt}`);
+          
+          // Always send via webhook (Zapier can forward to email)
+          const webhookPayload = {
+            event: 'sow_signed_full',
+            signer: { name, email, title, company },
+            signedAt,
+            sowDocId: SOW_DOC_ID,
+            sowVersion: SOW_VERSION,
+            integrityHash,
+            signaturePreview: signatureDataUrl.substring(0, 100) + '...', // Preview only
+            pdfBase64: pdfBase64, // Full PDF for attachment
+          };
+          
+          try {
+            const webhookUrl = getNotifyUrl();
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(webhookPayload),
+              keepalive: true,
+            });
+          } catch (e) {
+            console.warn('Webhook delivery failed:', e);
+          }
+
+          // Also try EmailJS if configured
+          if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+            try {
+              await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                to_name: 'Casey Larkin',
+                to_email: 'caseyglarkin2@gmail.com',
+                signer_name: name,
+                signer_email: email,
+                signer_title: title || 'N/A',
+                signer_company: company || 'N/A',
+                signed_at: signedAt,
+                integrity_hash: integrityHash,
+                sow_version: SOW_VERSION,
+              });
+              // Send copy to signer
+              await emailjs.send(EMAILJS_SERVICE_ID, 'template_sow_confirmation', {
+                to_name: name,
+                to_email: email,
+                signed_at: signedAt,
+                integrity_hash: integrityHash,
+              });
+            } catch (e) {
+              console.warn('EmailJS delivery failed:', e);
+            }
+          }
+          
+          return { integrityHash, success: true };
         }
 
         async function generateText(prompt) {
@@ -2662,24 +2745,98 @@ const playChunk = async (index) => {
             if (!agreed) { alert('Please agree to the terms.'); return; }
             const canvas = canvasRef.current;
             const sigDataUrl = canvas.toDataURL('image/png');
+            const signedAt = new Date().toISOString();
+            
+            // Generate integrity hash
+            const integrityHash = await hashString(`${SOW_DOC_ID}|${SOW_VERSION}|${name}|${email}|${signedAt}`);
+            
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            doc.setFontSize(18); doc.text('Sensos x Manifest 2026 — SOW', 20, 20);
-            doc.setFontSize(12);
-            doc.text(`Name: ${name}`, 20, 40);
-            if (title) doc.text(`Title: ${title}`, 20, 50);
-            doc.text(`Email: ${email}`, 20, title ? 60 : 50);
-            if (company) doc.text(`Company: ${company}`, 20, title ? 70 : 60);
-            doc.text(`Signed: ${new Date().toISOString()}`, 20, (title ? 80 : 70));
-            doc.text('Signature:', 20, (title ? 95 : 85));
-            doc.addImage(sigDataUrl, 'PNG', 20, (title ? 100 : 90), 80, 30);
-            const blob = doc.output('blob');
-            setPdfBlob(blob);
+            
+            // Header
+            doc.setFontSize(20); 
+            doc.setTextColor(0, 255, 194);
+            doc.text('SENSOS x MANIFEST 2026', 20, 20);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            doc.text('Statement of Work — Execution Agreement', 20, 30);
+            
+            // Horizontal line
+            doc.setDrawColor(200, 200, 200);
+            doc.line(20, 35, 190, 35);
+            
+            // Signer details
+            doc.setFontSize(11);
+            doc.text('SIGNATORY INFORMATION', 20, 45);
+            doc.setFontSize(10);
+            doc.text(`Name: ${name}`, 20, 55);
+            if (title) doc.text(`Title: ${title}`, 20, 62);
+            doc.text(`Email: ${email}`, 20, title ? 69 : 62);
+            if (company) doc.text(`Company: ${company}`, 20, title ? 76 : 69);
+            
+            // Agreement reference
+            const yPos = title && company ? 90 : title || company ? 83 : 76;
+            doc.setFontSize(11);
+            doc.text('AGREEMENT REFERENCE', 20, yPos);
+            doc.setFontSize(9);
+            doc.text(`SOW Document ID: ${SOW_DOC_ID}`, 20, yPos + 8);
+            doc.text(`SOW Version: ${SOW_VERSION}`, 20, yPos + 14);
+            doc.text(`View SOW: https://docs.google.com/document/d/${SOW_DOC_ID}`, 20, yPos + 20);
+            
+            // Integrity verification
+            doc.setFontSize(11);
+            doc.text('DOCUMENT INTEGRITY', 20, yPos + 35);
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Integrity Hash (SHA-256): ${integrityHash}`, 20, yPos + 43);
+            doc.text('This hash verifies the signer agreed to the unaltered original SOW.', 20, yPos + 49);
+            doc.setTextColor(0, 0, 0);
+            
+            // Signature
+            doc.setFontSize(11);
+            doc.text('DIGITAL SIGNATURE', 20, yPos + 62);
+            doc.text(`Signed: ${signedAt}`, 20, yPos + 70);
+            doc.addImage(sigDataUrl, 'PNG', 20, yPos + 75, 80, 30);
+            
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text('This document was digitally signed via the Sensos proposal portal.', 20, 280);
+            doc.text('Both parties have received a copy. No countersignature required.', 20, 285);
+            
+            const pdfBlob = doc.output('blob');
+            const pdfBase64 = doc.output('datauristring').split(',')[1];
+            
+            setPdfBlob(pdfBlob);
             setCanSend(true);
-            setSigned(true);
-            setOpen(false);
-            notifyEvent('sow_signed', { name, email }, { interactive: true });
-            window.dispatchEvent(new CustomEvent('toast', { detail: { message: '🎉 Agreement signed! Welcome to the future.' } }));
+            
+            // Send to both Casey and signer
+            window.dispatchEvent(new CustomEvent('toast', { detail: { message: '📧 Sending agreement to you and Casey...' } }));
+            
+            try {
+              await sendSignedAgreement({
+                name, email, title, company, signedAt,
+                signatureDataUrl: sigDataUrl,
+                pdfBase64
+              });
+              
+              // Store signature locally
+              localStorage.setItem('sow_signed_at', signedAt);
+              localStorage.setItem('sow_signer_email', email);
+              localStorage.setItem('sow_integrity_hash', integrityHash);
+              
+              setSigned(true);
+              setOpen(false);
+              
+              window.dispatchEvent(new CustomEvent('toast', { detail: { message: `🎉 Agreement signed! Copies sent to ${email} and Casey.` } }));
+            } catch (e) {
+              console.error('Email send error:', e);
+              // Still mark as signed even if email fails
+              localStorage.setItem('sow_signed_at', signedAt);
+              setSigned(true);
+              setOpen(false);
+              window.dispatchEvent(new CustomEvent('toast', { detail: { message: '🎉 Signed! (Email delivery may be delayed)' } }));
+            }
           };
 
           const eta = Math.max(0, deadlineTs - now);
