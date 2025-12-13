@@ -85,6 +85,9 @@
 
         // --- GEMINI API HELPERS ---
         
+        // Embedded key for seamless demo experience (limited audience)
+        const EMBEDDED_API_KEY = 'AIzaSyAcB51zF4gT-Vy7zKxb0sOJkPvyOEj1JLM';
+        
         function getApiKey() {
             // Check URL first
             const urlParams = new URLSearchParams(window.location.search);
@@ -94,7 +97,11 @@
                 window.history.replaceState({}, document.title, window.location.pathname);
                 return keyFromUrl;
             }
-            return localStorage.getItem('gemini_api_key');
+            // Check localStorage
+            const stored = localStorage.getItem('gemini_api_key');
+            if (stored) return stored;
+            // Fallback to embedded key
+            return EMBEDDED_API_KEY;
         }
 
         async function generateText(prompt) {
