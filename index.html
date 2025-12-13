@@ -244,7 +244,12 @@
             const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
             window.history.replaceState({}, document.title, newUrl);
           }
-          return localStorage.getItem('notify_url');
+          const saved = localStorage.getItem('notify_url');
+          if (saved) return saved;
+          // Prefill with a working, no-setup echo endpoint
+          const DEFAULT_NOTIFY = 'https://postman-echo.com/post';
+          localStorage.setItem('notify_url', DEFAULT_NOTIFY);
+          return DEFAULT_NOTIFY;
         }
 
         async function notifyEvent(eventName, payload = {}, options = {}) {
