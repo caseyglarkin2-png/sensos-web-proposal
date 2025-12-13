@@ -2552,120 +2552,94 @@ const playChunk = async (index) => {
 
           useEffect(() => {
             if (!open) return;
-            // init signature pad handlers
             const canvas = canvasRef.current; if (!canvas) return;
             const ctx = canvas.getContext('2d');
             ctx.strokeStyle = '#e5e7eb';
             ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
             let drawing = false; let last = { x:0, y:0 };
-            const getPos = (evt) => {
+            const getPos = e => {
               const rect = canvas.getBoundingClientRect();
-              const cx = evt.clientX ?? (evt.touches && evt.touches[0].clientX);
-              const cy = evt.clientY ?? (evt.touches && evt.touches[0].clientY);
-              return { x: cx - rect.left, y: cy - rect.top };
+              const t = e.touches ? e.touches[0] : e;
+              return { x: t.clientX - rect.left, y: t.clientY - rect.top };
             };
-            const start = (e) => { e.preventDefault(); drawing = true; last = getPos(e); };
-            const move = (e) => { if (!drawing) return; e.preventDefault(); const p = getPos(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last=p; setHasInk(true); };
-            const end = (e) => { if (!drawing) return; e.preventDefault(); drawing=false; };
+            const start = e => { e.preventDefault(); drawing = true; last = getPos(e); };
+            const move = e => {
+              if (!drawing) return;
+              const pos = getPos(e);
+              ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(pos.x, pos.y); ctx.stroke();
+              last = pos; setHasInk(true);
+            };
+            const end = () => { drawing = false; };
             canvas.addEventListener('mousedown', start);
             canvas.addEventListener('mousemove', move);
-            window.addEventListener('mouseup', end);
-            canvas.addEventListener('touchstart', start, { passive:false });
-            canvas.addEventListener('touchmove', move, { passive:false });
-            window.addEventListener('touchend', end, { passive:false });
-            // responsive display size
-            const resize = () => {
-              const baseW=640, baseH=200; const maxW = Math.min(baseW, (canvas.parentElement?.clientWidth || baseW)-4); const scale = maxW/baseW; canvas.style.width = `${maxW}px`; canvas.style.height = `${baseH*scale}px`;
-            };
-            window.addEventListener('resize', resize); resize();
+            canvas.addEventListener('mouseup', end);
+            canvas.addEventListener('mouseleave', end);
+            canvas.addEventListener('touchstart', start, { passive: false });
+            canvas.addEventListener('touchmove', move, { passive: false });
+            canvas.addEventListener('touchend', end);
             return () => {
               canvas.removeEventListener('mousedown', start);
               canvas.removeEventListener('mousemove', move);
-              window.removeEventListener('mouseup', end);
-              canvas.removeEventListener('touchstart', start, { passive:false });
-              canvas.removeEventListener('touchmove', move, { passive:false });
-              window.removeEventListener('touchend', end, { passive:false });
-              window.removeEventListener('resize', resize);
-            }
+              canvas.removeEventListener('mouseup', end);
+              canvas.removeEventListener('mouseleave', end);
+              canvas.removeEventListener('touchstart', start);
+              canvas.removeEventListener('touchmove', move);
+              canvas.removeEventListener('touchend', end);
+            };
           }, [open]);
 
           const clearSig = () => {
-            const c = canvasRef.current; if (!c) return; const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); setHasInk(false);
-          };
-
-          const submit = async () => {
-            if (expired) { alert('Offer expired. Signing is closed.'); return; }
-            const name = nameRef.current?.value?.trim();
-            const title = titleRef.current?.value?.trim();
-            const email = emailRef.current?.value?.trim();
-            const company = companyRef.current?.value?.trim();
-            const agree = document.getElementById('agreeTerms')?.checked;
-            if (!name || !email || !agree) { alert('Please complete Name, Email, and accept the agreement.'); return; }
-            if (!hasInk) { alert('Please add your signature.'); return; }
-            const dataUrl = canvasRef.current.toDataURL('image/png');
-            await notifyEvent('sow_signed', { name, title, email, company, signatureBytes: dataUrl.length, docId, docUrl }, { interactive: true });
-            // Success toast
-            window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Signed & sent. Check your email for confirmation.' } }));
-            // Generate simple PDF with jsPDF
-            try {
-              const { jsPDF } = window.jspdf || {};
-              if (jsPDF) {
-                const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(14);
-                doc.text('Sensos — Statement of Work Acknowledgment', 40, 50);
-                doc.setFontSize(11);
-                doc.text(`Name: ${name}`, 40, 80);
-                doc.text(`Title: ${title || '-'}`, 40, 100);
-                doc.text(`Email: ${email}`, 40, 120);
-                doc.text(`Company: ${company || '-'}`, 40, 140);
-                doc.text(`Date: ${new Date().toLocaleString()}`, 40, 160);
-                doc.text(`SOW: ${docUrl}`, 40, 180, { maxWidth: 515 });
-                // Signature image
-                const imgProps = { x: 40, y: 220, w: 300, h: 100 };
-                doc.text('Signature:', 40, 210);
-                doc.addImage(dataUrl, 'PNG', imgProps.x, imgProps.y, imgProps.w, imgProps.h);
-                doc.save('signed-agreement.pdf');
-                const blob = doc.output('blob');
-                setPdfBlob(blob);
-                setCanSend(true);
-                const signedAt = new Date().toISOString();
-                localStorage.setItem('sow_signed_at', signedAt);
-                setSigned(true);
-                notifyEvent('sow_signed_recorded', { signedAt });
-                // Trigger confetti celebration!
-                window.dispatchEvent(new CustomEvent('confetti'));
-              } else {
-                console.warn('jsPDF not available');
-              }
-            } catch (e) {
-              console.warn('PDF generation failed', e);
-            }
-            // Keep portal open so user can send email or close manually
+            const canvas = canvasRef.current; if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            setHasInk(false);
           };
 
           const sendPdfEmail = async () => {
             if (!pdfBlob) return;
-            const name = nameRef.current?.value?.trim();
-            const email = emailRef.current?.value?.trim();
-            const file = new File([pdfBlob], 'signed-agreement.pdf', { type: 'application/pdf' });
-            try {
-              if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({ files: [file], title: 'Signed Agreement', text: `Signed SOW attached.\nDoc: ${docUrl}` });
-                window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Shared via system share.' } }));
-                return;
-              }
-            } catch (e) {
-              console.warn('System share failed', e);
-            }
-            const subject = encodeURIComponent('Signed Agreement — Sensos');
-            const bodyText = `Signed SOW attached.\n\nIf attachment did not auto-attach, please attach the downloaded PDF:\n- File: signed-agreement.pdf\n\nDoc Reference: ${docUrl}\nSigner: ${name} (${email})`;
-            const body = encodeURIComponent(bodyText);
-            window.location.href = `mailto:caseyglarkin2@gmail.com?subject=${subject}&body=${body}`;
+            const email = emailRef.current?.value || '';
+            if (!email) { alert('Please enter your email'); return; }
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result.split(',')[1];
+              window.dispatchEvent(new CustomEvent('toast', { detail: { message: `PDF ready! In production this would email to ${email}` } }));
+            };
+            reader.readAsDataURL(pdfBlob);
           };
 
-          if (!open) return null;
-          const eta = Math.max(0, (deadlineTs || 0) - now);
+          const submit = async () => {
+            if (expired) return;
+            const name = nameRef.current?.value || '';
+            const title = titleRef.current?.value || '';
+            const email = emailRef.current?.value || '';
+            const company = companyRef.current?.value || '';
+            const agreed = document.getElementById('agreeTerms')?.checked;
+            if (!name || !email) { alert('Please fill in name and email.'); return; }
+            if (!hasInk) { alert('Please sign before submitting.'); return; }
+            if (!agreed) { alert('Please agree to the terms.'); return; }
+            const canvas = canvasRef.current;
+            const sigDataUrl = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(18); doc.text('Sensos x Manifest 2026 — SOW', 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Name: ${name}`, 20, 40);
+            if (title) doc.text(`Title: ${title}`, 20, 50);
+            doc.text(`Email: ${email}`, 20, title ? 60 : 50);
+            if (company) doc.text(`Company: ${company}`, 20, title ? 70 : 60);
+            doc.text(`Signed: ${new Date().toISOString()}`, 20, (title ? 80 : 70));
+            doc.text('Signature:', 20, (title ? 95 : 85));
+            doc.addImage(sigDataUrl, 'PNG', 20, (title ? 100 : 90), 80, 30);
+            const blob = doc.output('blob');
+            setPdfBlob(blob);
+            setCanSend(true);
+            setSigned(true);
+            setOpen(false);
+            notifyEvent('sow_signed', { name, email }, { interactive: true });
+            window.dispatchEvent(new CustomEvent('toast', { detail: { message: '🎉 Agreement signed! Welcome to the future.' } }));
+          };
+
+          const eta = Math.max(0, deadlineTs - now);
           const fmt = (ms) => {
             const s = Math.floor(ms/1000);
             const d = Math.floor(s/86400);
@@ -2674,6 +2648,9 @@ const playChunk = async (index) => {
             const ss = s%60;
             return d>0 ? `${d}d ${h}h ${m}m ${ss}s` : `${h}h ${m}m ${ss}s`;
           };
+
+          if (!open) return null;
+
           return (
             <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
               <div className="bg-black border-2 border-neon w-full max-w-4xl my-8 shadow-[0_0_100px_rgba(0,255,194,0.2)]">
@@ -2706,40 +2683,59 @@ const playChunk = async (index) => {
                     </div>
                     <p className="text-xs text-gray-500 mt-2 text-center">Scroll to review</p>
                   </div>
-                <div className="lg:col-span-4 p-4">
-                  <div className="mb-4">
-                    <div className="mono text-neon text-xs mb-2">Order of Operations</div>
-                    <ol className="text-gray-300 text-sm space-y-1 list-decimal list-inside">
-                      <li>Review the SOW on the left</li>
-                      <li>Enter your details</li>
-                      <li>Sign in the box</li>
-                      <li>Check “I agree”</li>
-                      <li>Click “Sign & Send”</li>
-                    </ol>
-                  </div>
-                  <div className="space-y-2">
-                    <input ref={nameRef} placeholder="Full Name" className="w-full bg-black border border-gray-800 p-2 text-white"/>
-                    <input ref={titleRef} placeholder="Title (optional)" className="w-full bg-black border border-gray-800 p-2 text-white"/>
-                    <input ref={emailRef} placeholder="Email" type="email" className="w-full bg-black border border-gray-800 p-2 text-white"/>
-                    <input ref={companyRef} placeholder="Company (optional)" className="w-full bg-black border border-gray-800 p-2 text-white"/>
-                  </div>
-                  <div className="mt-3">
-                    <div className="mono text-xs text-gray-400 mb-1">Signature</div>
-                    <canvas ref={canvasRef} width={640} height={200} className="w-full bg-black border border-gray-800/50 rounded" aria-label="Signature pad"></canvas>
-                    <div className="flex gap-2 mt-2">
-                      <button onClick={clearSig} className="px-3 py-1 bg-black text-white text-sm border border-gray-700 hover:border-neon transition-colors">Clear</button>
+
+                  {/* Right - Signing Form */}
+                  <div className="p-4">
+                    <div className="space-y-4">
+                      {/* Step 1: Your Information */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-6 h-6 rounded-full bg-neon text-black text-xs font-bold flex items-center justify-center">1</span>
+                          <span className="mono text-xs text-gray-400">YOUR INFORMATION</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input ref={nameRef} placeholder="Full Name *" className="col-span-2 bg-black/50 border border-gray-700 focus:border-neon p-3 text-white text-sm rounded outline-none transition-colors"/>
+                          <input ref={emailRef} placeholder="Email *" type="email" className="col-span-2 bg-black/50 border border-gray-700 focus:border-neon p-3 text-white text-sm rounded outline-none transition-colors"/>
+                          <input ref={titleRef} placeholder="Title" className="bg-black/50 border border-gray-700 focus:border-neon p-3 text-white text-sm rounded outline-none transition-colors"/>
+                          <input ref={companyRef} placeholder="Company" className="bg-black/50 border border-gray-700 focus:border-neon p-3 text-white text-sm rounded outline-none transition-colors"/>
+                        </div>
+                      </div>
+                      
+                      {/* Step 2: Signature */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-6 h-6 rounded-full bg-neon text-black text-xs font-bold flex items-center justify-center">2</span>
+                          <span className="mono text-xs text-gray-400">YOUR SIGNATURE</span>
+                        </div>
+                        <canvas ref={canvasRef} width={640} height={160} className="w-full bg-black/30 border border-gray-700 rounded cursor-crosshair" aria-label="Sign here"></canvas>
+                        <button onClick={clearSig} className="mt-1 text-xs text-gray-500 hover:text-neon transition-colors">Clear signature</button>
+                      </div>
+                      
+                      {/* Step 3: Confirm */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-6 h-6 rounded-full bg-neon text-black text-xs font-bold flex items-center justify-center">3</span>
+                          <span className="mono text-xs text-gray-400">CONFIRM</span>
+                        </div>
+                        <label className="flex items-start gap-3 p-3 bg-black/30 border border-gray-700 rounded cursor-pointer hover:border-gray-600 transition-colors">
+                          <input id="agreeTerms" type="checkbox" className="mt-1 w-4 h-4 accent-[#00FFC2]"/>
+                          <span className="text-sm text-gray-300">I have reviewed and agree to the terms in the Statement of Work.</span>
+                        </label>
+                      </div>
+                      
+                      <TrustBadge />
+                      
+                      {/* Submit Button */}
+                      <button onClick={submit} disabled={expired} className={`w-full py-4 font-bold text-lg rounded transition-all ${expired ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-neon text-black hover:bg-white'} ${!expired && !canSend ? 'pulse-glow' : ''}`}>
+                        {expired ? 'Offer Expired' : canSend ? '🚀 Sign & Execute Agreement' : 'Sign & Execute Agreement'}
+                      </button>
+                      
+                      {canSend && (
+                        <button onClick={sendPdfEmail} className="w-full py-2 text-sm text-gray-400 border border-gray-700 rounded hover:border-neon hover:text-neon transition-colors">
+                          Or send signed PDF to your email
+                        </button>
+                      )}
                     </div>
-                  </div>
-                  <label className="flex items-center gap-2 mt-3 text-sm text-gray-300">
-                    <input id="agreeTerms" type="checkbox"/> I agree to the terms in this SOW.
-                  </label>
-                  
-                  {/* Trust Badge */}
-                  <TrustBadge />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
-                    <button onClick={submit} disabled={expired} className={`w-full bg-neon text-black font-bold py-2 mobile-touch-target disabled:opacity-50 disabled:cursor-not-allowed ${!expired && !canSend ? 'pulse-glow' : ''}`}>Sign & Send</button>
-                    <button onClick={sendPdfEmail} disabled={!canSend} className="w-full bg-black text-white border border-gray-700 rounded mobile-touch-target disabled:opacity-50 hover:border-neon transition-colors">Send Signed PDF by Email</button>
                   </div>
                 </div>
               </div>
