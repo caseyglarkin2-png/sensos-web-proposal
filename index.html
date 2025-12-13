@@ -1026,6 +1026,161 @@
           );
         };
 
+        // Exhibits Component - Addendum Documents
+        const Exhibits = () => {
+          const docs = [
+            {
+              id: '1hM_5M1ETsQI1q4W3MwNkTtPb_4i14_vnRqoQdrIFosU',
+              title: 'EXHIBIT A',
+              subtitle: 'The Competitive Landscape',
+              desc: 'Market positioning, competitor analysis, and strategic differentiation framework.'
+            },
+            {
+              id: '1AcaTvBhj3gOBDAuzlv0NcH-pMnMIZInMhlaArlHNgf4',
+              title: 'EXHIBIT B',
+              subtitle: 'The Execution Playbook',
+              desc: 'Detailed tactical roadmap, timelines, and deliverables breakdown.'
+            }
+          ];
+          
+          const [activeDoc, setActiveDoc] = useState(null);
+          
+          return (
+            <section className="py-24 px-6 md:px-20 border-t border-gray-800/50">
+              <div className="max-w-7xl mx-auto">
+                <SectionHeader number="05" title="The Exhibits" subtitle="Supporting Documentation" />
+                
+                <p className="text-lg text-gray-400 mb-12 max-w-3xl">
+                  The devil is in the details. These addendums provide the strategic depth and tactical precision 
+                  behind the proposal. <span className="text-neon">Click to review.</span>
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  {docs.map((doc, i) => (
+                    <div 
+                      key={doc.id}
+                      onClick={() => setActiveDoc(activeDoc === doc.id ? null : doc.id)}
+                      className={`bg-black border p-6 cursor-pointer transition-all duration-300 ${activeDoc === doc.id ? 'border-neon shadow-[0_0_30px_rgba(0,255,194,0.2)]' : 'border-gray-800/50 hover:border-neon/50'}`}
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <div className="mono text-xs text-neon mb-1">{doc.title}</div>
+                          <h3 className="text-xl font-bold text-white">{doc.subtitle}</h3>
+                        </div>
+                        <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${activeDoc === doc.id ? 'border-neon bg-neon text-black' : 'border-gray-700 text-gray-500'}`}>
+                          {activeDoc === doc.id ? '−' : '+'}
+                        </div>
+                      </div>
+                      <p className="text-gray-500 text-sm">{doc.desc}</p>
+                      <a 
+                        href={`https://docs.google.com/document/d/${doc.id}/edit`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-block mt-4 mono text-xs text-neon hover:text-white transition-colors"
+                      >
+                        Open in Google Docs →
+                      </a>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Expanded Document Viewer */}
+                {activeDoc && (
+                  <div className="bg-black border border-neon shadow-[0_0_40px_rgba(0,255,194,0.15)] rounded overflow-hidden">
+                    <div className="p-4 border-b border-gray-800/50 flex justify-between items-center">
+                      <span className="mono text-sm text-neon">
+                        {docs.find(d => d.id === activeDoc)?.title}: {docs.find(d => d.id === activeDoc)?.subtitle}
+                      </span>
+                      <button onClick={() => setActiveDoc(null)} className="text-gray-500 hover:text-white text-xs">Close</button>
+                    </div>
+                    <iframe 
+                      title="Exhibit Document"
+                      src={`https://docs.google.com/document/d/${activeDoc}/preview`}
+                      className="w-full h-[70vh]"
+                    />
+                  </div>
+                )}
+              </div>
+            </section>
+          );
+        };
+
+        // Social Proof Component - The DWTB?! Origin
+        const SocialProof = () => {
+          const stats = [
+            { value: '50+', label: 'Livestream Episodes' },
+            { value: '30+', label: 'Startup CEOs Interviewed' },
+            { value: '$500K', label: 'Largest Campaign Sold' },
+            { value: '75', label: 'Years of Editorial Heritage' }
+          ];
+          
+          return (
+            <section className="py-24 px-6 md:px-20 border-t border-gray-800/50 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-neon/5 via-black to-black"></div>
+              
+              <div className="max-w-6xl mx-auto relative z-10">
+                <SectionHeader number="06" title="Why DWTB?!" subtitle="The Origin Story" />
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+                  {/* Story */}
+                  <div>
+                    <p className="text-lg text-gray-300 mb-6 leading-relaxed">
+                      <span className="text-neon font-bold">Dude, What's The Bid?!</span> isn't just a name—it's a 
+                      LinkedIn livestream that became a movement. 50+ episodes deep, interviewing the founders 
+                      and operators actually building the future of freight.
+                    </p>
+                    <p className="text-gray-400 mb-6 leading-relaxed">
+                      From product launches announced live on air, to C-suite appointments broken first on our show—
+                      we've become the place where freight tech comes to tell their story.
+                    </p>
+                    <p className="text-gray-400 mb-8 leading-relaxed">
+                      The podcast led to advisory work. Advisory work revealed a gap: 
+                      <span className="text-white"> great tech doesn't sell itself</span>. 
+                      That gap is why DWTB?! evolved from media into a full strategic & creative firm.
+                    </p>
+                    
+                    <div className="p-4 bg-black border-l-2 border-neon">
+                      <p className="text-sm text-gray-400 italic">
+                        "There's a huge difference between having great tech and being able to market it."
+                      </p>
+                      <p className="mono text-xs text-neon mt-2">— The Thesis</p>
+                    </div>
+                  </div>
+                  
+                  {/* Stats + Credibility */}
+                  <div>
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                      {stats.map((stat, i) => (
+                        <div key={i} className="bg-black border border-gray-800/50 p-4 text-center hover:border-neon/30 transition-colors">
+                          <div className="text-3xl font-black text-neon mb-1">{stat.value}</div>
+                          <div className="mono text-xs text-gray-500 uppercase">{stat.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="bg-black border border-gray-800/50 p-6">
+                      <div className="mono text-xs text-gray-500 mb-3">MEDIA DNA</div>
+                      <p className="text-sm text-gray-400 mb-4">
+                        Started in freight media at <span className="text-white">FreightWaves</span> when they acquired 
+                        <span className="text-white"> American Shipper</span>—a 75-year print editorial legacy. 
+                        Transitioned an entire book of business from print to digital. 
+                        Learned to sell vision, not just inventory.
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        <span className="mono text-xs bg-neon/10 text-neon px-2 py-1 rounded border border-neon/20">Earned Media</span>
+                        <span className="mono text-xs bg-neon/10 text-neon px-2 py-1 rounded border border-neon/20">Paid Media</span>
+                        <span className="mono text-xs bg-neon/10 text-neon px-2 py-1 rounded border border-neon/20">GTM Strategy</span>
+                        <span className="mono text-xs bg-neon/10 text-neon px-2 py-1 rounded border border-neon/20">Brand Building</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        };
+
         // Pricing Component
         const Pricing = () => {
           return (
@@ -1534,6 +1689,8 @@
               <Strategy />
               <ManifestPlan />
               <Pricing />
+              <Exhibits />
+              <SocialProof />
               <ManifestoExperience />
               <FixedCTA remaining={remaining} expired={expired} signed={signed} />
               <NotifyModal />
