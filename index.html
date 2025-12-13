@@ -1263,6 +1263,8 @@
           const companyRef = useRef(null);
           const canvasRef = useRef(null);
           const [hasInk, setHasInk] = useState(false);
+          const [pdfBlob, setPdfBlob] = useState(null);
+          const [canSend, setCanSend] = useState(false);
           const docId = '1xruZfOiLhtGaJRXBsfyowWob0Hn808oy';
           const docUrl = `https://docs.google.com/document/d/${docId}/preview`;
           const pdfUrl = `https://docs.google.com/document/d/${docId}/export?format=pdf`;
@@ -1348,13 +1350,36 @@
                 doc.text('Signature:', 40, 210);
                 doc.addImage(dataUrl, 'PNG', imgProps.x, imgProps.y, imgProps.w, imgProps.h);
                 doc.save('signed-agreement.pdf');
+                const blob = doc.output('blob');
+                setPdfBlob(blob);
+                setCanSend(true);
               } else {
                 console.warn('jsPDF not available');
               }
             } catch (e) {
               console.warn('PDF generation failed', e);
             }
-            setOpen(false);
+            // Keep portal open so user can send email or close manually
+          };
+
+          const sendPdfEmail = async () => {
+            if (!pdfBlob) return;
+            const name = nameRef.current?.value?.trim();
+            const email = emailRef.current?.value?.trim();
+            const file = new File([pdfBlob], 'signed-agreement.pdf', { type: 'application/pdf' });
+            try {
+              if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: 'Signed Agreement', text: `Signed SOW attached.\nDoc: ${docUrl}` });
+                window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Shared via system share.' } }));
+                return;
+              }
+            } catch (e) {
+              console.warn('System share failed', e);
+            }
+            const subject = encodeURIComponent('Signed Agreement — Sensos');
+            const bodyText = `Signed SOW attached.\n\nIf attachment did not auto-attach, please attach the downloaded PDF:\n- File: signed-agreement.pdf\n\nDoc Reference: ${docUrl}\nSigner: ${name} (${email})`;
+            const body = encodeURIComponent(bodyText);
+            window.location.href = `mailto:caseyglarkin2@gmail.com?subject=${subject}&body=${body}`;
           };
 
           if (!open) return null;
@@ -1403,7 +1428,10 @@
                   <label className="flex items-center gap-2 mt-3 text-sm text-gray-300">
                     <input id="agreeTerms" type="checkbox"/> I agree to the terms in this SOW.
                   </label>
-                  <button onClick={submit} className="mt-4 w-full bg-neon text-black font-bold py-2">Sign & Send</button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
+                    <button onClick={submit} className="w-full bg-neon text-black font-bold py-2">Sign & Send</button>
+                    <button onClick={sendPdfEmail} disabled={!canSend} className="w-full bg-gray-900 text-white border border-gray-700 rounded disabled:opacity-50">Send Signed PDF by Email</button>
+                  </div>
                 </div>
               </div>
             </div>
