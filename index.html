@@ -210,34 +210,137 @@
             // format chunk length
             view.setUint32(16, 16, true);
             // sample format (raw)
-            view.setUint16(20, 1, true);
-            // channel count
-            view.setUint16(22, numChannels, true);
-            // sample rate
-            view.setUint32(24, sampleRate, true);
-            // byte rate (sample rate * block align)
-            view.setUint32(28, byteRate, true);
-            // block align (channel count * bytes per sample)
-            view.setUint16(32, blockAlign, true);
-            // bits per sample
-            view.setUint16(34, bitsPerSample, true);
-            // data chunk identifier
-            writeString(view, 36, 'data');
-            // data chunk length
-            view.setUint32(40, dataSize, true);
+            const ManifestoReader = () => {
+              const [open, setOpen] = useState(false);
+              const [activeIndex, setActiveIndex] = useState(-1);
+              const [audioCache, setAudioCache] = useState({});
+              const [isLoading, setIsLoading] = useState(false);
+              const [isPlaying, setIsPlaying] = useState(false);
+              const itemRefs = useRef([]);
+              const audioRef = useRef(new Audio());
 
-            // Write the PCM samples
-            const pcmData = new Uint8Array(buffer, 44);
-            pcmData.set(bytes);
+              const manifestoChunks = [
+                "The supply chain isn't broken. It's obsolete.",
+                "Legacy visibility watches disasters happen. LIA intervenes before they exist.",
+                "We are not a better dashboard. We are a central nervous system.",
+                "Exceptions are not alerts. They are orders for the brain to act.",
+                "Control beats visibility. Outcomes beat metrics.",
+                "Sensos needs a weapon, not a brochure.",
+                "This is logistics with agency. The freight moves because the brain wills it.",
+                "If data is the terrain, LIA is the force that crosses it.",
+                "We don't report on fires. We extinguish them before you smell smoke.",
+                "The Monolith is not a booth. It's a threshold.",
+                "Sign the contract. Join the divergence.",
+              ];
 
-            return new Blob([buffer], { type: 'audio/wav' });
-        }
+              useEffect(() => {
+                const handler = () => setOpen(true);
+                window.addEventListener('open-manifesto-reader', handler);
+                return () => window.removeEventListener('open-manifesto-reader', handler);
+              }, []);
 
-        function writeString(view, offset, string) {
-          for (let i = 0; i < string.length; i++) {
-            view.setUint8(offset + i, string.charCodeAt(i));
-          }
-        }
+              const getAudioForChunk = async (index) => {
+                if (index >= manifestoChunks.length) return null;
+                if (audioCache[index]) return audioCache[index];
+                const text = manifestoChunks[index];
+                const b64 = await generateSpeech(text);
+                if (!b64) return null;
+                const wav = base64ToWav(b64);
+                const url = URL.createObjectURL(wav);
+                setAudioCache(prev => ({ ...prev, [index]: url }));
+                return url;
+              };
+
+              const playChunk = async (index) => {
+                if (index >= manifestoChunks.length) {
+                  setIsPlaying(false);
+                  notifyEvent('manifesto_complete');
+                  return;
+                }
+                setActiveIndex(index);
+                notifyEvent('manifesto_chunk_play', { index });
+                if (itemRefs.current[index]) {
+                  itemRefs.current[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                let audioUrl = audioCache[index];
+                if (!audioUrl) {
+                  setIsLoading(true);
+                  audioUrl = await getAudioForChunk(index);
+                  setIsLoading(false);
+                }
+                if (audioUrl) {
+                  audioRef.current.src = audioUrl;
+                  audioRef.current.play();
+                  getAudioForChunk(index + 1);
+                  audioRef.current.onended = () => {
+                    notifyEvent('manifesto_chunk_end', { index });
+                    playChunk(index + 1);
+                  };
+                } else {
+                  window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Audio generation failed. Advancing…' } }));
+                  setTimeout(() => playChunk(index + 1), 2000);
+                }
+              };
+
+              const startExperience = () => {
+                setIsPlaying(true);
+                notifyEvent('manifesto_start');
+                playChunk(0);
+              };
+
+              const stopExperience = () => {
+                audioRef.current.pause();
+                setIsPlaying(false);
+                setOpen(false);
+                notifyEvent('manifesto_terminated');
+              };
+
+              if (!open) return null;
+              return (
+                <div className="fixed inset-0 z-[120] bg-black flex flex-col">
+                  <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-black/90 backdrop-blur z-10">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${isPlaying ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`}></div>
+                      <span className="mono text-neon text-sm">LIA // MANIFESTO PROTOCOL</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {activeIndex === -1 ? (
+                        <button onClick={startExperience} className="px-3 py-1 bg-neon text-black font-bold text-xs">INITIATE</button>
+                      ) : (
+                        <button onClick={stopExperience} className="text-gray-400 hover:text-white text-xs">Close</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto relative p-8 md:p-20 scroll-smooth">
+                    <div className="max-w-4xl mx-auto space-y-24 py-10">
+                      {activeIndex === -1 && (
+                        <div className="h-[50vh] flex flex-col items-center justify-center text-center">
+                          <h2 className="text-5xl md:text-7xl font-black text-white mb-8 uppercase tracking-tighter">
+                            The <span className="text-neon">Truth</span>
+                          </h2>
+                          <button onClick={startExperience} className="px-6 py-3 bg-neon text-black font-bold uppercase tracking-widest">Initiate Sequence</button>
+                        </div>
+                      )}
+                      {manifestoChunks.map((text, i) => (
+                        <div key={i} ref={el => itemRefs.current[i] = el} className={`transition-all duration-700 ${i === activeIndex ? 'opacity-100 scale-105 blur-none' : 'opacity-25 scale-95 blur-[2px]'}`}>
+                          <p className={`text-3xl md:text-5xl font-bold leading-tight uppercase ${i === activeIndex ? 'text-white text-shadow-neon' : 'text-gray-600'}`}>
+                            {i === activeIndex && <span className="text-neon mr-3">&gt;</span>}
+                            {text}
+                          </p>
+                        </div>
+                      ))}
+                      {activeIndex >= manifestoChunks.length - 1 && (
+                        <div className="h-[40vh] flex items-center justify-center">
+                          <button onClick={() => { stopExperience(); window.dispatchEvent(new CustomEvent('open-real-review-sign-portal')); }} className="text-neon border border-neon px-8 py-4 uppercase hover:bg-neon hover:text-black transition-colors">Proceed to Signature</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[50] bg-[length:100%_2px,3px_100%]"></div>
+                </div>
+              );
+            };
+          };
 
         // --- NOTIFICATIONS (Webhook-based) ---
         function getNotifyUrl() {
@@ -334,6 +437,10 @@
 
           .bg-neon {
             background-color: var(--neon-cyan);
+          }
+
+          .text-shadow-neon {
+            text-shadow: 0 0 20px rgba(0, 255, 194, 0.6);
           }
 
           .text-alert {
@@ -450,7 +557,7 @@
                   <a href="#proposal" className="group bg-neon text-black px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-white transition-colors">
                     <Terminal size={20} /> Step 1: See The Plan
                   </a>
-                  <a href="#sign" onClick={(e) => { e.preventDefault(); notifyEvent('cta_review_sign_click', {}, { interactive: true }); window.dispatchEvent(new CustomEvent('open-manifesto-gate')); }} className="group border border-neon text-neon px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-neon hover:text-black transition-colors">
+                  <a href="#sign" onClick={(e) => { e.preventDefault(); notifyEvent('cta_review_sign_click', {}, { interactive: true }); window.dispatchEvent(new CustomEvent('open-manifesto-reader')); }} className="group border border-neon text-neon px-8 py-4 font-bold text-lg uppercase tracking-wide flex items-center gap-2 hover:bg-neon hover:text-black transition-colors">
                     <ShieldAlert size={20} /> Step 2: Review & Sign
                   </a>
                   <div className="border border-gray-700 px-8 py-4 flex items-center gap-4 bg-black/50 backdrop-blur-sm">
@@ -460,6 +567,10 @@
                     </div>
                     <div className="h-10 w-10 bg-gray-800 rounded-full flex items-center justify-center font-bold text-neon border border-neon">CL</div>
                   </div>
+                </div>
+                {/* Manifesto Podcast Section */}
+                <div className="mt-10">
+                  <ManifestoPodcast />
                 </div>
               </div>
 
@@ -472,6 +583,35 @@
                 </div>
               </div>
             </section>
+          );
+        };
+
+        // Manifesto Podcast Component (Google Drive preview)
+        const ManifestoPodcast = () => {
+          const fileId = '1MxHxOc8p0LAhKrHzmCojH-bhNFN_HmRv';
+          const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+          useEffect(() => {
+            notifyEvent('podcast_loaded', { fileId });
+          }, []);
+          return (
+            <div className="bg-black border border-neon p-4 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white font-bold uppercase">The Impetus — Podcast</h3>
+                <div className="flex items-center gap-2">
+                  <a href={`https://drive.google.com/file/d/${fileId}/view`} target="_blank" rel="noreferrer" onClick={() => notifyEvent('podcast_open_external', { fileId }, { interactive: true })} className="mono text-xs text-neon underline">Open in Tab</a>
+                  <button onClick={() => { notifyEvent('manifesto_start_from_podcast'); window.dispatchEvent(new CustomEvent('open-manifesto-reader')); }} className="mono text-xs bg-neon text-black font-bold px-3 py-1">Start Narrated Manifesto</button>
+                </div>
+              </div>
+              <div className="relative w-full aspect-video border border-gray-800">
+                <iframe
+                  title="Manifesto Podcast"
+                  src={previewUrl}
+                  allow="autoplay"
+                  className="w-full h-full"
+                ></iframe>
+              </div>
+              <div className="mt-2 mono text-xs text-gray-500">If playback fails, request a direct MP4 link for native player.</div>
+            </div>
           );
         };
 
@@ -1147,6 +1287,11 @@
 
         // Main App Component
         function App() {
+          // Countdown to Monday 12/15/2025 midnight ET (05:00:00Z)
+          const DEADLINE_TS = Date.parse('2025-12-15T05:00:00Z');
+          const [remaining, setRemaining] = useState(Math.max(0, DEADLINE_TS - Date.now()));
+          const [expired, setExpired] = useState(DEADLINE_TS - Date.now() <= 0);
+          const [signed, setSigned] = useState(!!localStorage.getItem('sow_signed_at'));
           // Notify when signature section enters viewport
           useEffect(() => {
             const el = document.getElementById('sign');
@@ -1186,6 +1331,21 @@
             const checkId = setInterval(checkUi, 60 * 1000);
             return () => { clearInterval(pingId); clearInterval(checkId); };
           }, []);
+          // Countdown ticker
+          useEffect(() => {
+            if (signed || expired) return;
+            const tick = () => {
+              const rem = DEADLINE_TS - Date.now();
+              setRemaining(Math.max(0, rem));
+              if (rem <= 0) {
+                setExpired(true);
+                notifyEvent('offer_expired', { deadlineET: '2025-12-15T00:00:00-05:00' });
+              }
+            };
+            tick();
+            const id = setInterval(tick, 1000);
+            return () => clearInterval(id);
+          }, [signed, expired]);
           // Notify when webhook configured
           useEffect(() => {
             const url = getNotifyUrl();
@@ -1203,11 +1363,11 @@
               <Strategy />
               <ManifestPlan />
               <Pricing />
-              <FixedCTA />
+              <FixedCTA remaining={remaining} expired={expired} signed={signed} />
               <NotifyModal />
-              <ManifestoGate />
+              <ManifestoReader />
               <ToastHost />
-              <ReviewSignPortal />
+              <ReviewSignPortal deadlineTs={DEADLINE_TS} expired={expired} setSigned={setSigned} />
             </div>
           );
         }
@@ -1322,7 +1482,7 @@
         };
 
         // Review & Sign Portal (modal)
-        const ReviewSignPortal = () => {
+        const ReviewSignPortal = ({ deadlineTs, expired, setSigned }) => {
           const [open, setOpen] = React.useState(false);
           const nameRef = useRef(null);
           const titleRef = useRef(null);
@@ -1335,6 +1495,12 @@
           const docId = '1xruZfOiLhtGaJRXBsfyowWob0Hn808oy';
           const docUrl = `https://docs.google.com/document/d/${docId}/preview`;
           const pdfUrl = `https://docs.google.com/document/d/${docId}/export?format=pdf`;
+          const [now, setNow] = useState(Date.now());
+          useEffect(() => {
+            if (!open) return;
+            const id = setInterval(() => setNow(Date.now()), 1000);
+            return () => clearInterval(id);
+          }, [open]);
 
           useEffect(() => {
             const openHandler = () => setOpen(true);
@@ -1386,6 +1552,7 @@
           };
 
           const submit = async () => {
+            if (expired) { alert('Offer expired. Signing is closed.'); return; }
             const name = nameRef.current?.value?.trim();
             const title = titleRef.current?.value?.trim();
             const email = emailRef.current?.value?.trim();
@@ -1420,6 +1587,10 @@
                 const blob = doc.output('blob');
                 setPdfBlob(blob);
                 setCanSend(true);
+                const signedAt = new Date().toISOString();
+                localStorage.setItem('sow_signed_at', signedAt);
+                setSigned(true);
+                notifyEvent('sow_signed_recorded', { signedAt });
               } else {
                 console.warn('jsPDF not available');
               }
@@ -1450,6 +1621,15 @@
           };
 
           if (!open) return null;
+          const eta = Math.max(0, (deadlineTs || 0) - now);
+          const fmt = (ms) => {
+            const s = Math.floor(ms/1000);
+            const d = Math.floor(s/86400);
+            const h = Math.floor((s%86400)/3600);
+            const m = Math.floor((s%3600)/60);
+            const ss = s%60;
+            return d>0 ? `${d}d ${h}h ${m}m ${ss}s` : `${h}h ${m}m ${ss}s`;
+          };
           return (
             <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-gray-950 border border-neon w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-0">
@@ -1460,6 +1640,13 @@
                       <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-neon text-xs underline">Open PDF</a>
                       <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white text-xs">Close</button>
                     </div>
+                  </div>
+                  <div className="mb-3">
+                    {expired ? (
+                      <div className="mono text-xs text-red-400">Offer expired. Signing disabled.</div>
+                    ) : (
+                      <div className="mono text-xs text-neon">Offer expires in {fmt(eta)}.</div>
+                    )}
                   </div>
                   <div className="h-[60vh] lg:h-[70vh] relative bg-black border border-neon shadow-[0_0_30px_rgba(0,255,194,0.15)] overflow-hidden">
                     <div className="absolute inset-0 pointer-events-none opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
@@ -1496,7 +1683,7 @@
                     <input id="agreeTerms" type="checkbox"/> I agree to the terms in this SOW.
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
-                    <button onClick={submit} className="w-full bg-neon text-black font-bold py-2">Sign & Send</button>
+                    <button onClick={submit} disabled={expired} className="w-full bg-neon text-black font-bold py-2 disabled:opacity-50 disabled:cursor-not-allowed">Sign & Send</button>
                     <button onClick={sendPdfEmail} disabled={!canSend} className="w-full bg-gray-900 text-white border border-gray-700 rounded disabled:opacity-50">Send Signed PDF by Email</button>
                   </div>
                 </div>
@@ -1506,16 +1693,26 @@
         };
 
         // Fixed bottom CTA
-        const FixedCTA = () => {
+        const FixedCTA = ({ remaining, expired, signed }) => {
+          const fmt = (ms) => {
+            const s = Math.floor(ms/1000);
+            const d = Math.floor(s/86400);
+            const h = Math.floor((s%86400)/3600);
+            const m = Math.floor((s%3600)/60);
+            const ss = s%60;
+            return d>0 ? `${d}d ${h}h ${m}m ${ss}s` : `${h}h ${m}m ${ss}s`;
+          };
           const handleClick = (e) => {
             e.preventDefault();
             notifyEvent('cta_fixed_review_sign_click', {}, { interactive: true });
-            window.dispatchEvent(new CustomEvent('open-manifesto-gate'));
+            window.dispatchEvent(new CustomEvent('open-manifesto-reader'));
           };
+          const status = expired ? 'Offer expired' : signed ? `Signed` : `Offer expires in ${fmt(remaining)}`;
+          const statusClass = expired ? 'text-red-400' : 'text-neon';
           return (
             <div className="fixed bottom-0 left-0 right-0 z-40">
               <div className="mx-4 mb-4 bg-black/70 backdrop-blur-sm border border-neon px-4 py-3 flex items-center justify-between">
-                <span className="mono text-xs text-neon">Step 2: Review & Sign</span>
+                <span className={`mono text-xs ${statusClass}`}>{status}</span>
                 <button onClick={handleClick} className="px-4 py-2 bg-neon text-black font-bold rounded hover:bg-white">Open</button>
               </div>
             </div>
