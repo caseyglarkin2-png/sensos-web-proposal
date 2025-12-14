@@ -134,8 +134,8 @@
 
         // --- DOCUMENT INTEGRITY ---
         // Hash of the official SOW document to verify it wasn't altered
-        const SOW_DOC_ID = '1xruZfOiLhtGaJRXBsfyowWob0Hn808oy';
-        const SOW_VERSION = '2025-12-13-v1'; // Update if SOW changes
+        const SOW_DOC_ID = '1YYej1qwKOia9uIed5C1YJn8DH_YobLpL';
+        const SOW_VERSION = '2025-12-14-v2'; // Update if SOW changes
         
         // Simple hash function for integrity verification
         async function hashString(str) {
@@ -758,8 +758,8 @@ We're excited to build the future of Sensos together!
 
         // Compact Bottom Module: Podcast + Agreement + Sign with Countdown
         function ManifestoExperience() {
-          const docId = '1tAgP1DDQbuKkqzKschxu4WU0TnqwMu8lEipqii1kLcg';
-          const docPreview = `https://docs.google.com/document/d/${docId}/preview`;
+          const docId = '1YYej1qwKOia9uIed5C1YJn8DH_YobLpL';
+          const docPreview = `https://drive.google.com/file/d/${docId}/preview`;
           const podcastId = '1MxHxOc8p0LAhKrHzmCojH-bhNFN_HmRv';
           const podcastUrl = `https://drive.google.com/file/d/${podcastId}/preview`;
           
@@ -3138,9 +3138,9 @@ const playChunk = async (index) => {
           const [hasInk, setHasInk] = useState(false);
           const [pdfBlob, setPdfBlob] = useState(null);
           const [canSend, setCanSend] = useState(false);
-          const docId = '1xruZfOiLhtGaJRXBsfyowWob0Hn808oy';
-          const docUrl = `https://docs.google.com/document/d/${docId}/preview`;
-          const pdfUrl = `https://docs.google.com/document/d/${docId}/export?format=pdf`;
+          const docId = '1YYej1qwKOia9uIed5C1YJn8DH_YobLpL';
+          const docUrl = `https://drive.google.com/file/d/${docId}/preview`;
+          const pdfUrl = `https://drive.google.com/uc?export=download&id=${docId}`;
           const [now, setNow] = useState(Date.now());
           useEffect(() => {
             if (!open) return;
