@@ -1790,49 +1790,410 @@ We're excited to build the future of Sensos together!
           );
         };
 
-        // Competitive Landscape Component - Market Intel
-        const CompetitiveLandscape = () => {
-          const competitors = [
-            { name: 'project44', position: 'Market leader narrative', weakness: 'Commodity perception' },
-            { name: 'FourKites', position: 'Enterprise focus', weakness: 'Innovation stagnation' },
-            { name: 'Tive', position: 'Hardware-first', weakness: 'Software secondary' },
-            { name: 'Overhaul', position: 'Security angle', weakness: 'Narrow positioning' }
+        // Strategic Master Plan - The Full Singularity Breakdown
+        const StrategicMasterPlan = () => {
+          const [expandedSection, setExpandedSection] = useState(null);
+          
+          const sections = [
+            {
+              id: 'manifesto',
+              number: '01',
+              title: 'Executive Manifesto',
+              subtitle: 'The Collapse of Visibility into Action',
+              content: (
+                <div className="space-y-6">
+                  <div className="p-6 bg-black/50 border-l-4 border-neon">
+                    <h4 className="text-lg font-bold text-white mb-3">The Epistemological Crisis</h4>
+                    <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                      The global logistics industry stands at a precipice of redundancy, paralyzed by a legacy narrative that has outlived its utility. 
+                      For a decade, the dominant paradigm has been <span className="text-white">"Visibility"</span>—billions poured into the singular promise 
+                      of seeing a dot on a map.
+                    </p>
+                    <p className="text-gray-400 text-sm leading-relaxed">
+                      The market is now saturated with "control towers" that are, in reality, merely <span className="text-red-400">observation decks for chaos</span>. 
+                      Visibility is passive—the act of watching a disaster unfold in real-time.
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-5 bg-gray-900/50 border border-gray-800">
+                      <div className="mono text-xs text-gray-500 mb-2">LEGACY NARRATIVE (Visibility 1.0)</div>
+                      <p className="text-gray-400 text-sm">"See where your shipment is."</p>
+                      <p className="text-xs text-gray-600 mt-2">Appeals to curiosity and anxiety management. Reactive.</p>
+                    </div>
+                    <div className="p-5 bg-neon/5 border border-neon/30">
+                      <div className="mono text-xs text-neon mb-2">SINGULARITY NARRATIVE (LIA)</div>
+                      <p className="text-white text-sm">"Anticipate disruption before it manifests."</p>
+                      <p className="text-xs text-neon/70 mt-2">Appeals to survival and operational dominance. Proactive.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-black border border-gray-800/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <BoltIcon size={16} className="text-neon" />
+                      <span className="mono text-xs text-neon">THE PHYSICS OF THE SINGULARITY</span>
+                    </div>
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      In astrophysics, a singularity is where the old rules of physics break down. 
+                      In logistics, it's the moment <span className="text-neon">Sensos LIA</span> collapses the distance between "Warning" and "Fix"—
+                      where visibility becomes action, automatically.
+                    </p>
+                  </div>
+                </div>
+              )
+            },
+            {
+              id: 'brand',
+              number: '02',
+              title: 'Brand Strategy',
+              subtitle: 'The "Event Horizon" Visual Language',
+              content: (
+                <div className="space-y-6">
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The current visual landscape of logistics is a sea of indistinguishable corporate blues, 
+                    populated by stock imagery of smiling warehouse workers. This imagery is a lie—the supply chain is 
+                    <span className="text-white"> chaotic, dirty, and volatile</span>. To launch LIA, we embrace a visual identity that signals 
+                    intelligence, autonomy, and the future.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-5 bg-black border border-gray-800 text-center">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-[#050505] border border-gray-700"></div>
+                      <div className="mono text-xs text-gray-500 mb-1">THE VOID</div>
+                      <div className="text-white font-bold">#050505</div>
+                      <p className="text-xs text-gray-500 mt-2">Vantablack-adjacent. The unknown depth.</p>
+                    </div>
+                    <div className="p-5 bg-black border border-neon/50 text-center">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-[#00FFC2] shadow-[0_0_20px_rgba(0,255,194,0.5)]"></div>
+                      <div className="mono text-xs text-neon mb-1">LIA NEON</div>
+                      <div className="text-neon font-bold">#00FFC2</div>
+                      <p className="text-xs text-gray-500 mt-2">Bio-electric cyan. Active intelligence.</p>
+                    </div>
+                    <div className="p-5 bg-black border border-red-500/30 text-center">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-[#FF2A00]"></div>
+                      <div className="mono text-xs text-red-400 mb-1">ALERT RED</div>
+                      <div className="text-red-400 font-bold">#FF2A00</div>
+                      <p className="text-xs text-gray-500 mt-2">Safety Ember. Tactical alerts only.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-black/50 border border-gray-800">
+                    <div className="mono text-xs text-gray-500 mb-3">MATERIALITY: THE WEIGHT OF ENGINEERING</div>
+                    <p className="text-sm text-gray-400 leading-relaxed">
+                      Digital assets must possess physical weight. The Sony ALT1250-enabled Smart Label is rendered with 
+                      <span className="text-white"> brushed titanium and matte rubber</span> textures—not presented as plastic, 
+                      but as a military-grade instrument of truth.
+                    </p>
+                  </div>
+                </div>
+              )
+            },
+            {
+              id: 'digital',
+              number: '03',
+              title: 'Digital Architecture',
+              subtitle: 'An Immersive "System of Action"',
+              content: (
+                <div className="space-y-6">
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    This cannot be a standard WordPress brochure site. To justify the "heavy design" investment and surprise the market, 
+                    it must be a <span className="text-neon">WebGL-powered immersive experience</span> that functions as a real-time demo of the LIA mindset.
+                  </p>
+                  
+                  <div className="p-5 bg-black border border-neon/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Activity size={16} className="text-neon" />
+                      <span className="mono text-xs text-neon">THE HERO EXPERIENCE: PARTICLE SINGULARITY</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="mono text-xs text-gray-500 mb-2">CHAOS STATE</div>
+                        <p className="text-xs text-gray-400">Particles move with high randomness, reacting to "disruptions" that scatter the stream.</p>
+                      </div>
+                      <div>
+                        <div className="mono text-xs text-neon mb-2">LIA STATE</div>
+                        <p className="text-xs text-gray-400">Particles are magnetically pulled into efficient, laminar flow—visualizing "Order from Chaos."</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-5 bg-black border border-gray-800">
+                    <div className="mono text-xs text-gray-500 mb-3">THE "CROSSROADS" NAVIGATION</div>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3 p-3 bg-gray-900/50 rounded">
+                        <Users size={16} className="text-neon flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-white text-sm font-medium">Path 1: "Who You Know Blvd"</div>
+                          <p className="text-xs text-gray-500">Social proof, dinner series invites, team bios. The Network.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 bg-gray-900/50 rounded">
+                        <Server size={16} className="text-neon flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-white text-sm font-medium">Path 2: "What You Know St"</div>
+                          <p className="text-xs text-gray-500">Technical specs, war game scenarios, market data. The Intel.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 bg-neon/5 border border-neon/30 rounded">
+                        <Brain size={16} className="text-neon flex-shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-neon text-sm font-medium">Path 3: "The Path to Knowing"</div>
+                          <p className="text-xs text-gray-400">The SOW and interactive LIA demo. The Singularity.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            },
+            {
+              id: 'manifest',
+              number: '04',
+              title: 'Manifest 2026',
+              subtitle: 'The Physical Singularity',
+              content: (
+                <div className="space-y-6">
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The digital experience serves as the prequel to the physical activation at Manifest 2026 in Las Vegas. 
+                    The campaign is designed to <span className="text-white">dominate the floor through spatial disruption and psychological engineering</span>.
+                  </p>
+                  
+                  <div className="p-6 bg-black border-2 border-gray-800">
+                    <div className="text-center mb-6">
+                      <div className="mono text-xs text-neon mb-2">BOOTH #337</div>
+                      <h4 className="text-2xl font-black text-white">THE MONOLITH</h4>
+                      <p className="text-sm text-gray-500">20x20 • The Black Box</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-gray-900/50">
+                        <div className="mono text-xs text-gray-500 mb-2">THE EXTERIOR</div>
+                        <p className="text-xs text-gray-400">
+                          Semi-transparent black mesh façade (Vantablack-tinted smart glass). 
+                          Filters "tire kickers" and triggers <span className="text-white">FOMO</span> among serious buyers.
+                        </p>
+                      </div>
+                      <div className="p-4 bg-gray-900/50">
+                        <div className="mono text-xs text-gray-500 mb-2">THE INTERIOR</div>
+                        <p className="text-xs text-gray-400">
+                          Acoustic paneling creates a zone of silence, dampening the expo hall's roar. 
+                          Signals <span className="text-white">"Sanctuary"</span>.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 p-4 bg-neon/5 border border-neon/30 text-center">
+                      <div className="mono text-xs text-neon mb-2">THE PILLAR</div>
+                      <p className="text-xs text-gray-400">
+                        Floor-to-ceiling Holographic LED displaying the "LIA Brain"—a living visualization 
+                        of supply chain data. <span className="text-neon">The campfire around which the tribe gathers.</span>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-black border border-gray-800">
+                      <div className="mono text-xs text-neon mb-2">THE ROUNDTABLE: "12:30 ANOMALY"</div>
+                      <p className="text-xs text-gray-400 mb-3">
+                        "It is 3:00 AM. A $5M pharma shipment has deviated. You are asleep. What happens?"
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Crisis simulation concludes with the LIA Narrative—demonstrating how the AI agent handled 
+                        the anomaly four hours before the human woke up.
+                      </p>
+                    </div>
+                    <div className="p-4 bg-black border border-gray-800">
+                      <div className="mono text-xs text-neon mb-2">DINNER SERIES: TALE OF TWO CITIES</div>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Night 1: The Hafla</span>
+                          <span className="text-gray-500">Organized chaos, communal dining</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Night 2: The Sanctuary</span>
+                          <span className="text-gray-500">Silence, service, C-Suite focus</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            },
+            {
+              id: 'commercial',
+              number: '05',
+              title: 'Commercial Architecture',
+              subtitle: 'The "Dude" Pivot',
+              content: (
+                <div className="space-y-6">
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The proposal leverages the consultancy structure of "Dude, What's The Bid?! LLC" to strip away 
+                    the overhead of traditional agency models. This <span className="text-neon">"Dude Pivot"</span> offers a lean execution model 
+                    that preserves high-fidelity output while significantly reducing the annual investment.
+                  </p>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-800">
+                          <th className="text-left py-3 px-4 mono text-xs text-gray-500">COMPONENT</th>
+                          <th className="text-right py-3 px-4 mono text-xs text-red-400">AGENCY</th>
+                          <th className="text-right py-3 px-4 mono text-xs text-neon">DUDE PIVOT</th>
+                          <th className="text-right py-3 px-4 mono text-xs text-green-400">SAVINGS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-gray-800/50">
+                          <td className="py-3 px-4 text-gray-300">Phase 1: Rebrand + Web</td>
+                          <td className="py-3 px-4 text-right text-red-400 line-through">$150,000</td>
+                          <td className="py-3 px-4 text-right text-neon font-bold">$75,000</td>
+                          <td className="py-3 px-4 text-right text-green-400">$75,000</td>
+                        </tr>
+                        <tr className="border-b border-gray-800/50">
+                          <td className="py-3 px-4 text-gray-300">Phase 2: Manifest</td>
+                          <td className="py-3 px-4 text-right text-red-400 line-through">$60,000</td>
+                          <td className="py-3 px-4 text-right text-neon font-bold">$15,000</td>
+                          <td className="py-3 px-4 text-right text-green-400">$45,000</td>
+                        </tr>
+                        <tr className="border-b border-gray-800/50">
+                          <td className="py-3 px-4 text-gray-300">Annual Retainer</td>
+                          <td className="py-3 px-4 text-right text-red-400 line-through">$294,000</td>
+                          <td className="py-3 px-4 text-right text-neon font-bold">$144,000</td>
+                          <td className="py-3 px-4 text-right text-green-400">$150,000</td>
+                        </tr>
+                        <tr className="bg-neon/5">
+                          <td className="py-3 px-4 text-white font-bold">TOTAL ANNUAL</td>
+                          <td className="py-3 px-4 text-right text-red-400 line-through">~$504,000</td>
+                          <td className="py-3 px-4 text-right text-neon font-bold">$234,000</td>
+                          <td className="py-3 px-4 text-right text-green-400 font-bold">~$270,000</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <div className="p-4 bg-black border border-gray-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ClockIcon size={16} className="text-red-400" />
+                      <span className="mono text-xs text-red-400">THE "STRICT EXPIRY" MECHANISM</span>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      This leverages <span className="text-white">Loss Aversion</span>. The Phase 2 discount ($58,000) and the "Rush Execution" slot 
+                      are finite resources. The countdown timer transforms the SOW from a "proposal to be reviewed" into 
+                      a <span className="text-red-400">wasting asset</span>.
+                    </p>
+                  </div>
+                </div>
+              )
+            },
+            {
+              id: 'verticals',
+              number: '06',
+              title: 'Vertical-Specific Journeys',
+              subtitle: 'Persona-Driven Micro-Sites',
+              content: (
+                <div className="space-y-6">
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The website must cater to distinct buyer personas with distinct anxieties. 
+                    The design system flexes to accommodate these "micro-brand" experiences.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-5 bg-black border border-gray-800 hover:border-gray-600 transition-colors">
+                      <div className="mono text-xs text-gray-500 mb-3">AVIATION / AOG</div>
+                      <p className="text-sm text-white mb-3">Aerospace Precision</p>
+                      <ul className="space-y-1 text-xs text-gray-500">
+                        <li>• Dark mode, HUD graphics</li>
+                        <li>• "Time to Criticality" focus</li>
+                        <li>• Grounded Aircraft Cost metrics</li>
+                        <li>• Velocity + location precision</li>
+                      </ul>
+                    </div>
+                    <div className="p-5 bg-black border border-gray-800 hover:border-gray-600 transition-colors">
+                      <div className="mono text-xs text-gray-500 mb-3">LIFE SCIENCES</div>
+                      <p className="text-sm text-white mb-3">Sterile Integrity</p>
+                      <ul className="space-y-1 text-xs text-gray-500">
+                        <li>• Clean white/silver aesthetic</li>
+                        <li>• "GDP Compliance" emphasis</li>
+                        <li>• Audit trail visualization</li>
+                        <li>• Temperature stability focus</li>
+                      </ul>
+                    </div>
+                    <div className="p-5 bg-black border border-gray-800 hover:border-gray-600 transition-colors">
+                      <div className="mono text-xs text-gray-500 mb-3">LOGISTICS / 3PL</div>
+                      <p className="text-sm text-white mb-3">Network Efficiency</p>
+                      <ul className="space-y-1 text-xs text-gray-500">
+                        <li>• Network density visualization</li>
+                        <li>• Exception management focus</li>
+                        <li>• Margin preservation metrics</li>
+                        <li>• Multi-client view</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
           ];
+          
+          const toggleSection = (id) => {
+            setExpandedSection(expandedSection === id ? null : id);
+          };
           
           return (
             <section className="py-16 px-6 md:px-20 border-t border-gray-800/50">
               <div className="max-w-6xl mx-auto">
                 <div className="flex items-center gap-4 mb-8">
-                  <span className="mono text-xs text-neon tracking-wider">MARKET INTELLIGENCE</span>
+                  <span className="mono text-xs text-neon tracking-wider">THE SENSOS SINGULARITY</span>
                   <div className="flex-1 h-px bg-gray-800/50"></div>
                 </div>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-1">
-                    <h3 className="text-2xl font-bold text-white mb-4">The Battlefield</h3>
-                    <p className="text-gray-400 mb-6 leading-relaxed text-sm">
-                      Visibility is a crowded space. Everyone claims AI. Everyone claims real-time. 
-                      <span className="text-white">Nobody owns "agentic."</span> That's the gap.
-                    </p>
-                    <p className="text-gray-500 text-sm mb-6">
-                      The Singularity narrative positions Sensos not as another visibility tool, 
-                      but as the <span className="text-neon">moment the old rules break down</span>.
-                    </p>
-                    <a 
-                      href="https://docs.google.com/document/d/1tAgP1DDQbuKkqzKschxu4WU0TnqwMu8lEipqii1kLcg/edit"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group inline-flex items-center gap-3 mono text-sm bg-neon/10 border border-neon/50 text-neon px-4 py-2 rounded hover:bg-neon hover:text-black hover:border-neon transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,194,0.4)]"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                      Full Analysis
-                      <span className="group-hover:translate-x-1 transition-transform">→</span>
-                    </a>
-                  </div>
-                  
-                  <div className="lg:col-span-2">
+                <div className="mb-8">
+                  <h3 className="text-3xl font-black text-white mb-4">Strategic Master Plan</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed max-w-2xl">
+                    A comprehensive operating system for market dominance and digital transformation. 
+                    <span className="text-white"> Click any section to expand.</span>
+                  </p>
+                </div>
+                
+                <div className="space-y-3">
+                  {sections.map((section) => (
+                    <div key={section.id} className={`border transition-all duration-300 ${expandedSection === section.id ? 'border-neon bg-black' : 'border-gray-800 hover:border-gray-700'}`}>
+                      <button 
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full p-4 flex items-center justify-between text-left"
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="mono text-xs text-neon">{section.number}</span>
+                          <div>
+                            <h4 className="text-white font-bold">{section.title}</h4>
+                            <p className="text-xs text-gray-500">{section.subtitle}</p>
+                          </div>
+                        </div>
+                        <div className={`transition-transform duration-300 ${expandedSection === section.id ? 'rotate-180' : ''}`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                      </button>
+                      {expandedSection === section.id && (
+                        <div className="px-4 pb-6 border-t border-gray-800">
+                          <div className="pt-6">
+                            {section.content}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Competitive Landscape Summary */}
+                <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div>
+                    <div className="mono text-xs text-gray-500 mb-4">MARKET INTELLIGENCE</div>
                     <div className="grid grid-cols-2 gap-3">
-                      {competitors.map((c, i) => (
+                      {[
+                        { name: 'project44', position: 'Market leader narrative', weakness: 'Commodity perception' },
+                        { name: 'FourKites', position: 'Enterprise focus', weakness: 'Innovation stagnation' },
+                        { name: 'Tive', position: 'Hardware-first', weakness: 'Software secondary' },
+                        { name: 'Overhaul', position: 'Security angle', weakness: 'Narrow positioning' }
+                      ].map((c, i) => (
                         <div key={i} className="bg-black border border-gray-800/30 p-4 hover:border-gray-700 transition-colors">
                           <div className="text-white font-medium mb-2">{c.name}</div>
                           <div className="text-xs text-gray-500 mb-1">Position: <span className="text-gray-400">{c.position}</span></div>
@@ -1840,12 +2201,17 @@ We're excited to build the future of Sensos together!
                         </div>
                       ))}
                     </div>
-                    <div className="mt-4 p-4 bg-neon/5 border border-neon/20">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-neon rounded-full"></div>
-                        <span className="mono text-xs text-neon">SENSOS POSITIONING</span>
-                      </div>
-                      <p className="text-sm text-white mt-2">"We don't just see disruptions—we fix them before you wake up."</p>
+                  </div>
+                  <div>
+                    <div className="mono text-xs text-neon mb-4">SENSOS POSITIONING</div>
+                    <div className="p-6 bg-neon/5 border border-neon/30 h-full flex flex-col justify-center">
+                      <p className="text-xl text-white font-bold leading-relaxed mb-4">
+                        "We don't just see disruptions—we fix them before you wake up."
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Everyone claims AI. Everyone claims real-time. 
+                        <span className="text-neon"> Nobody owns "agentic."</span> That's the gap.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -2501,7 +2867,7 @@ const playChunk = async (index) => {
               <Strategy />
               <CompetitiveEdge />
               <ExecutionPlaybook />
-              <CompetitiveLandscape />
+              <StrategicMasterPlan />
               <SocialProof />
               <TheMeta />
               <ManifestPlan />
