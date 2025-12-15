@@ -28,6 +28,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div id="root" class="bg-black min-h-screen text-white flex items-center justify-center">
@@ -144,6 +145,66 @@
           const hashBuffer = await crypto.subtle.digest('SHA-256', data);
           const hashArray = Array.from(new Uint8Array(hashBuffer));
           return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // --- SUPABASE SIGNATURE TRACKING ---
+        const SUPABASE_URL = 'https://xplhtqncuwvoxaywzrlo.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwbGh0cW5jdXd2b3hheXd6cmxvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ0NDE2MDAsImV4cCI6MjA1MDAxNzYwMH0.demo_key_replace_in_production';
+        
+        let supabase = null;
+        try {
+          supabase = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) {
+          console.warn('Supabase not available:', e);
+        }
+
+        // Save signature to central database
+        async function saveSignatureToDatabase({ name, email, title, company, signedAt, integrityHash }) {
+          if (!supabase) {
+            console.warn('Supabase not initialized, signature saved locally only');
+            return { success: false, error: 'Database not available' };
+          }
+          
+          try {
+            const { data, error } = await supabase
+              .from('signatures')
+              .insert([{
+                name,
+                email,
+                title: title || null,
+                company: company || null,
+                signed_at: signedAt,
+                integrity_hash: integrityHash,
+                sow_version: SOW_VERSION
+              }])
+              .select();
+            
+            if (error) throw error;
+            return { success: true, data };
+          } catch (error) {
+            console.error('Error saving signature to database:', error);
+            return { success: false, error: error.message };
+          }
+        }
+
+        // Fetch all signatures from central database
+        async function fetchAllSignatures() {
+          if (!supabase) {
+            return { success: false, signatures: [] };
+          }
+          
+          try {
+            const { data, error } = await supabase
+              .from('signatures')
+              .select('*')
+              .order('signed_at', { ascending: false });
+            
+            if (error) throw error;
+            return { success: true, signatures: data || [] };
+          } catch (error) {
+            console.error('Error fetching signatures:', error);
+            return { success: false, signatures: [] };
+          }
         }
 
         // Send signed agreement via email using FormSubmit.co (no setup required!)
@@ -811,6 +872,9 @@ We're excited to build the future of Sensos together!
                   <div className="lg:col-span-4 space-y-4">
                     {/* TL;DR Summary */}
                     <TLDRSummary />
+                    
+                    {/* Signature Tracker */}
+                    <SignatureList />
                     
                     <div className="bg-black border border-gray-800/50 p-3 rounded">
                       <h4 className="mono text-xs text-neon mb-2 flex items-center gap-1.5"><MicrophoneIcon size={12} /> THE IMPETUS</h4>
@@ -2782,7 +2846,8 @@ const playChunk = async (index) => {
           const DEADLINE_TS = Date.parse('2025-12-15T05:00:00Z');
           const [remaining, setRemaining] = useState(Math.max(0, DEADLINE_TS - Date.now()));
           const [expired, setExpired] = useState(DEADLINE_TS - Date.now() <= 0);
-          const [signed, setSigned] = useState(!!localStorage.getItem('sow_signed_at'));
+          // Allow multiple signatures - don't lock after first signature
+          const [signed, setSigned] = useState(false);
           // Notify when signature section enters viewport
           useEffect(() => {
             const el = document.getElementById('sign');
@@ -3126,6 +3191,104 @@ const playChunk = async (index) => {
           </div>
         );
 
+        // Signature List Component - Shows who has signed
+        const SignatureList = () => {
+          const [signatures, setSignatures] = useState([]);
+          const [loading, setLoading] = useState(true);
+          const [error, setError] = useState(null);
+
+          useEffect(() => {
+            loadSignatures();
+            // Refresh every 30 seconds
+            const interval = setInterval(loadSignatures, 30000);
+            return () => clearInterval(interval);
+          }, []);
+
+          const loadSignatures = async () => {
+            const result = await fetchAllSignatures();
+            if (result.success) {
+              setSignatures(result.signatures);
+              setError(null);
+            } else {
+              setError('Unable to load signatures');
+            }
+            setLoading(false);
+          };
+
+          const formatDate = (dateStr) => {
+            const date = new Date(dateStr);
+            return date.toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            });
+          };
+
+          if (loading) {
+            return (
+              <div className="bg-black border border-gray-800/50 p-6 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users size={16} className="text-neon" />
+                  <span className="mono text-xs text-neon uppercase">Signatures</span>
+                </div>
+                <div className="text-gray-500 text-sm animate-pulse">Loading signatures...</div>
+              </div>
+            );
+          }
+
+          if (error) {
+            return (
+              <div className="bg-black border border-gray-800/50 p-6 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users size={16} className="text-neon" />
+                  <span className="mono text-xs text-neon uppercase">Signatures</span>
+                </div>
+                <div className="text-gray-500 text-sm">
+                  {error} <button onClick={loadSignatures} className="text-neon hover:text-white ml-2">Retry</button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="bg-black border border-gray-800/50 p-6 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-neon" />
+                  <span className="mono text-xs text-neon uppercase">Signatures ({signatures.length})</span>
+                </div>
+                <button onClick={loadSignatures} className="text-xs text-gray-500 hover:text-neon">
+                  <Activity size={14} className="inline mr-1" /> Refresh
+                </button>
+              </div>
+              
+              {signatures.length === 0 ? (
+                <div className="text-gray-500 text-sm">No signatures yet. Be the first to sign!</div>
+              ) : (
+                <div className="space-y-3">
+                  {signatures.map((sig, idx) => (
+                    <div key={sig.id || idx} className="p-3 bg-black/50 border border-gray-800 rounded">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-white font-medium">{sig.name}</div>
+                          {sig.title && <div className="text-gray-400 text-xs">{sig.title}{sig.company ? ` at ${sig.company}` : ''}</div>}
+                          <div className="text-gray-600 text-xs mt-1">{sig.email}</div>
+                        </div>
+                        <CheckCircleIcon size={16} className="text-neon flex-shrink-0" />
+                      </div>
+                      <div className="text-gray-500 text-xs mt-2 flex items-center gap-1">
+                        <ClockIcon size={12} /> {formatDate(sig.signed_at)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        };
 
         // Review & Sign Portal (modal)
         const ReviewSignPortal = ({ deadlineTs, expired, setSigned }) => {
@@ -3292,26 +3455,37 @@ const playChunk = async (index) => {
             window.dispatchEvent(new CustomEvent('toast', { detail: { message: '📧 Sending agreement to you and Casey...' } }));
             
             try {
+              // Save to central database
+              const dbResult = await saveSignatureToDatabase({
+                name, email, title, company, signedAt, integrityHash
+              });
+              
               await sendSignedAgreement({
                 name, email, title, company, signedAt,
                 signatureDataUrl: sigDataUrl,
                 pdfBase64
               });
               
-              // Store signature locally
-              localStorage.setItem('sow_signed_at', signedAt);
-              localStorage.setItem('sow_signer_email', email);
-              localStorage.setItem('sow_integrity_hash', integrityHash);
+              // Store signature locally for record-keeping
+              const previousSignatures = JSON.parse(localStorage.getItem('sow_signatures') || '[]');
+              previousSignatures.push({ name, email, signedAt, integrityHash });
+              localStorage.setItem('sow_signatures', JSON.stringify(previousSignatures));
               
-              setSigned(true);
+              // Don't set signed=true to allow multiple signatures
               setOpen(false);
               
-              window.dispatchEvent(new CustomEvent('toast', { detail: { message: `🎉 Agreement signed! Copies sent to ${email} and Casey.` } }));
+              const dbMsg = dbResult.success ? '' : ' (Note: Not saved to central database)';
+              window.dispatchEvent(new CustomEvent('toast', { detail: { message: `🎉 Agreement signed! Copies sent to ${email} and Casey.${dbMsg}` } }));
             } catch (e) {
               console.error('Email send error:', e);
-              // Still mark as signed even if email fails
-              localStorage.setItem('sow_signed_at', signedAt);
-              setSigned(true);
+              // Try to save to database even if email fails
+              await saveSignatureToDatabase({
+                name, email, title, company, signedAt, integrityHash
+              });
+              // Store signature locally for record-keeping
+              const previousSignatures = JSON.parse(localStorage.getItem('sow_signatures') || '[]');
+              previousSignatures.push({ name, email, signedAt, integrityHash });
+              localStorage.setItem('sow_signatures', JSON.stringify(previousSignatures));
               setOpen(false);
               window.dispatchEvent(new CustomEvent('toast', { detail: { message: '🎉 Signed! (Email delivery may be delayed)' } }));
             }
@@ -3446,9 +3620,9 @@ const playChunk = async (index) => {
             notifyEvent('cta_fixed_review_sign_click', {}, { interactive: true });
             window.dispatchEvent(new CustomEvent('open-manifesto-reader'));
           };
-          const statusIcon = expired ? null : signed ? <CheckCircleIcon size={14} className="inline mr-1" /> : <ClockIcon size={14} className="inline mr-1" />;
-          const status = expired ? 'Offer expired' : signed ? 'Signed!' : fmt(remaining);
-          const statusClass = expired ? 'text-red-400' : signed ? 'text-green-400' : 'text-neon';
+          const statusIcon = expired ? null : <ClockIcon size={14} className="inline mr-1" />;
+          const status = expired ? 'Offer expired' : fmt(remaining);
+          const statusClass = expired ? 'text-red-400' : 'text-neon';
           return (
             <div className="fixed bottom-0 left-0 right-0 z-40">
               <div className="mx-4 mb-4 bg-black/90 backdrop-blur-sm border border-neon px-4 py-3 flex items-center justify-between gap-3">
@@ -3456,8 +3630,8 @@ const playChunk = async (index) => {
                   <span className={`mono text-xs ${statusClass} flex items-center`}>{statusIcon}{status}</span>
                   {!expired && !signed && <span className="text-green-400 text-xs font-bold hidden sm:inline flex items-center gap-1"><CoinIcon size={14} /> $229K+ savings</span>}
                 </div>
-                <button onClick={handleClick} disabled={signed} className={`px-4 py-2 font-bold rounded mobile-touch-target transition-all ${signed ? 'bg-gray-700 text-gray-400 cursor-default' : 'bg-neon text-black hover:bg-white pulse-glow'}`}>
-                  {signed ? 'Complete' : 'Review & Sign'}
+                <button onClick={handleClick} disabled={expired} className={`px-4 py-2 font-bold rounded mobile-touch-target transition-all ${expired ? 'bg-gray-700 text-gray-400 cursor-default' : 'bg-neon text-black hover:bg-white pulse-glow'}`}>
+                  Review & Sign
                 </button>
               </div>
             </div>

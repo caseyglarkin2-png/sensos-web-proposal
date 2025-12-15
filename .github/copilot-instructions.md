@@ -20,11 +20,28 @@ This is a v2 web proposal project for Sensos. The codebase is currently in its i
 - Import/export patterns
 
 ## Development Workflow
-*Document commands as they're established:*
-- Build commands
-- Test commands
-- Deployment process
-- Environment setup
+
+### Signature Tracking
+- Central database: Supabase (setup guide: `SUPABASE_SETUP.md`)
+- Signatures stored in `signatures` table
+- Local fallback: `localStorage.getItem('sow_signatures')`
+- Auto-refresh every 30 seconds
+
+### Testing Signatures
+```javascript
+// Check local signatures in browser console:
+JSON.parse(localStorage.getItem('sow_signatures') || '[]')
+
+// Manually add test signature:
+await saveSignatureToDatabase({
+  name: 'Test User',
+  email: 'test@example.com',
+  title: 'CEO',
+  company: 'Test Co',
+  signedAt: new Date().toISOString(),
+  integrityHash: 'test_hash_123'
+})
+```
 
 ## Testing Practices
 *To be defined:*
