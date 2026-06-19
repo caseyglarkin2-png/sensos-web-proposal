@@ -47,7 +47,12 @@
         };
     </script>
 
-    <script type="text/babel">
+    <!-- NOTE: type is "text/plain" (not "text/babel") so @babel/standalone does NOT auto-transform
+         this block. Recent Babel releases default the JSX preset to the AUTOMATIC runtime, which emits
+         `import { jsx } from "react/jsx-runtime"` and crashes when injected as a classic script
+         ("Cannot use import statement outside a module"). The bootstrap below transforms it explicitly
+         with the CLASSIC runtime (React.createElement), which is immune to that CDN default changing. -->
+    <script type="text/plain" id="app-src">
         // --- SAFETY CHECK ---
         if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
             throw new Error("React or ReactDOM failed to load. Please check your internet connection or CDN status.");
@@ -3646,6 +3651,24 @@ const playChunk = async (index) => {
             document.getElementById('debug-error').style.display = 'block';
             document.getElementById('debug-error').innerHTML += `<strong>Render Error:</strong> ${error.message}<br>`;
         }
+    </script>
+    <script>
+        // Bootstrap: transform the app source with the CLASSIC JSX runtime, then run it.
+        (function () {
+            try {
+                var src = document.getElementById('app-src').textContent;
+                var out = Babel.transform(src, { presets: [['react', { runtime: 'classic' }]] }).code;
+                var s = document.createElement('script');
+                // Wrap in an IIFE so the app's top-level `let`/`const` (e.g. `supabase`) don't collide
+                // with globals defined by the CDN bundles (the Supabase UMD also defines `supabase`).
+                s.textContent = '(function(){\n' + out + '\n})();';
+                document.body.appendChild(s);
+            } catch (err) {
+                console.error('App bootstrap failed:', err);
+                var d = document.getElementById('debug-error');
+                if (d) { d.style.display = 'block'; d.innerHTML += '<strong>Bootstrap error:</strong> ' + err.message + '<br>'; }
+            }
+        })();
     </script>
 </body>
 </html> 
